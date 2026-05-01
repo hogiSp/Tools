@@ -2,7 +2,8 @@
   "name": "Spot-It Karten Generator",
   "short_name": "SpotIt",
   "description": "Erstelle individuelle Spot-It / Dobble Karten mit eigenen Bildern.",
-  "start_url": "./spotit_generator.html",
+  "start_url": "https://hogisp.github.io/Tools/SpotIt_Generator/spotit_generator.html",
+  "scope": "https://hogisp.github.io/Tools/SpotIt_Generator/",
   "display": "standalone",
   "orientation": "landscape",
   "background_color": "#1a252f",
@@ -23,6 +24,20 @@
     }
   ],
   "categories": ["games", "education", "utilities"],
-  "screenshots": [],
-  "related_applications": []
+  "screenshots": [
+    {
+      "src": "screenshots/screenshot-wide.png",
+      "sizes": "1280x800",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Spot-It Generator – Desktop Ansicht"
+    },
+    {
+      "src": "screenshots/screenshot-narrow.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Spot-It Generator – Mobile Ansicht"
+    }
+  ]
 }
