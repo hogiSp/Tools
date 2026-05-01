@@ -372,7 +372,7 @@ main{position:relative}
 <header>
   <div class="hrow">
     <h1>&#x1F3B4; Spot-It Karten Generator</h1>
-    <span style="font-size:10px;font-weight:700;color:#fff;background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.22);border-radius:5px;padding:2px 7px;letter-spacing:.4px;white-space:nowrap;flex-shrink:0">v 1.10</span>
+    <span style="font-size:10px;font-weight:700;color:#fff;background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.22);border-radius:5px;padding:2px 7px;letter-spacing:.4px;white-space:nowrap;flex-shrink:0">v 1.11</span>
     <div class="hrow-sep"></div>
     <button class="hbtn" style="background:linear-gradient(135deg,#16a085,#1abc9c);font-size:13px;padding:7px 16px" onclick="openIC()">&#x1F4E5; Import</button>
     <button class="hbtn" style="background:linear-gradient(135deg,#e67e22,#f39c12);font-size:13px;padding:7px 16px" onclick="openEC()">&#x1F4E4; Export</button>
@@ -2763,10 +2763,14 @@ function toggleGallery() {
 // ── Initial render ──
 renderCard();
 
-// ── SharePoint detection ──
-if (location.protocol !== 'file:') {
-  document.getElementById('modal-overlay').classList.add('show');
-}
+// ── SharePoint / OneDrive detection (nicht auf GitHub Pages oder anderen echten HTTPS-Hosts) ──
+(function(){
+  const h = location.hostname;
+  const isBad = /sharepoint\.com|onedrive\.live\.com|1drv\.ms|office\.com/.test(h);
+  if (isBad) {
+    document.getElementById('modal-overlay').classList.add('show');
+  }
+})();
 </script>
 </body>
 </html>
