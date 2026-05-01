@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "io.github.hogisp.twa",
+        "sha256_cert_fingerprints": ["0A:DA:FB:4C:74:19:C8:D1:C5:CE:0B:35:12:54:F0:67:01:20:1B:35:A1:C3:41:FA:8E:D9:81:02:91:67:91:09"]
+      }
+    }]
