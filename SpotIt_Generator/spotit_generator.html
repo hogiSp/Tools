@@ -2,7 +2,7 @@
 <html lang="de"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Spot-It Karten Generator</title>
+<title>Spot-It Card Generator</title>
 <!-- PWA -->
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1a252f">
@@ -60,14 +60,18 @@ main{flex:1;display:flex;overflow:hidden}
 /* ── CARD AREA (right) ── */
 .card-area{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px;min-width:0;overflow:hidden}
 .card-nav{display:flex;align-items:center;gap:10px}
-.nav-btn{background:#1a252f;color:#fff;border:none;width:36px;height:36px;border-radius:50%;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .1s}
-.nav-btn:hover{background:#2c3e50}
-.card-num{font-size:14px;font-weight:600;color:#333;width:90px;text-align:center}
+.canvas-jog-row{display:flex;align-items:center;gap:14px}
+/* Jog wheel */
+.jog-wrap{display:flex;flex-direction:column;align-items:center;gap:6px}
+.jog-wheel{width:48px;height:300px;background:linear-gradient(170deg,#2c3e50 0%,#1a252f 100%);border-radius:24px;position:relative;cursor:ns-resize;border:2px solid #3a5068;box-shadow:inset 0 0 12px rgba(0,0,0,.5),0 4px 14px rgba(0,0,0,.4);overflow:hidden;user-select:none;touch-action:none}
+.jog-ridges{position:absolute;inset:0;background:repeating-linear-gradient(to bottom,transparent 0px,transparent 9px,rgba(255,255,255,.07) 9px,rgba(255,255,255,.07) 11px);will-change:transform}
+.jog-center{position:absolute;left:6px;right:6px;height:3px;top:50%;transform:translateY(-50%);background:#e67e22;border-radius:2px;box-shadow:0 0 8px rgba(230,126,34,.8)}
+.jog-lbl{font-size:11px;color:#bdc3c7;text-align:center;white-space:nowrap}
 #card-slider{width:min(400px,90%)}
 #card-canvas{
   width: min(640px, calc(100vh - 210px));
   height: min(640px, calc(100vh - 210px));
-  border-radius:50%;
+  border-radius:0;
   box-shadow:0 6px 28px rgba(0,0,0,.28);
   background:#fff;
 }
@@ -107,9 +111,16 @@ main{flex:1;display:flex;overflow:hidden}
 .modal-box code{background:#f4f4f4;padding:2px 6px;border-radius:3px;font-size:13px}
 .modal-box button{margin-top:16px;background:#2980b9;color:#fff;border:none;padding:9px 22px;border-radius:6px;cursor:pointer;font-size:14px}
 .modal-box button:hover{background:#3498db}
-/* ── CARD BG COLOR PICKER ── */
+/* ── Card Shape selector ── */
+.shape-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.shape-btn{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);color:#bdc3c7;
+  padding:4px 11px;border-radius:6px;cursor:pointer;font-size:12px;white-space:nowrap;
+  transition:background .12s,color .12s,border-color .12s}
+.shape-btn:hover{background:rgba(255,255,255,.18);color:#fff}
+.shape-btn.shape-active{background:#e67e22;border-color:#e67e22;color:#fff;font-weight:700}
+
+/* ── CARD RING ROW ── */
 .bg-row{display:flex;align-items:center;gap:8px;font-size:13px;color:#555}
-.bg-row input[type=color]{width:36px;height:28px;border:none;border-radius:4px;cursor:pointer;padding:2px}
 
 /* ── IMPORT / EXPORT CHOOSER PANELS ── */
 .ic-overlay{display:none;position:fixed;inset:0;z-index:800;background:rgba(5,12,22,.7);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
@@ -142,23 +153,29 @@ main{flex:1;display:flex;overflow:hidden}
 main{position:relative}
 
 /* ── PLAY MODE ── */
-#play-overlay{display:none;position:fixed;inset:0;z-index:900;background:#07111c;flex-direction:column;align-items:center;justify-content:center;gap:16px}
+#play-overlay{display:none;position:fixed;inset:0;z-index:900;background:#07111c;flex-direction:column;align-items:center;justify-content:center;gap:0}
 #play-overlay.show{display:flex}
-.play-header{display:flex;align-items:center;gap:14px;background:linear-gradient(135deg,#0f2236,#1a3a52);border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:12px 22px;box-shadow:0 8px 40px rgba(0,0,0,.5)}
-.play-title{font-size:17px;font-weight:800;letter-spacing:-.3px;background:linear-gradient(90deg,#1abc9c,#3498db);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;white-space:nowrap}
-.play-score{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:5px 14px;font-size:13px;color:#bdc3c7;display:flex;align-items:center;gap:6px}
-.play-cards{display:flex;gap:32px;align-items:center;position:relative}
-.play-card-wrap{display:flex;flex-direction:column;align-items:center;gap:10px}
-.play-label{font-size:12px;color:#4a6070;font-weight:700;letter-spacing:1px;text-transform:uppercase}
-#play-canvas-left,#play-canvas-right{border-radius:50%;box-shadow:0 6px 32px rgba(0,0,0,.55);cursor:pointer;transition:transform .15s}
+/* floating collapsible HUD — slide in from top */
+#play-hud{position:absolute;top:0;left:50%;transform:translateX(-50%);z-index:10;display:flex;flex-direction:column;align-items:center}
+#play-hud-bar{display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,#0f2236cc,#1a3a52cc);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.1);border-top:none;border-radius:0 0 18px 18px;padding:8px 18px;box-shadow:0 4px 24px rgba(0,0,0,.5);transition:transform .25s;transform:translateY(0)}
+#play-hud.collapsed #play-hud-bar{transform:translateY(-100%)}
+#play-hud-tab{background:linear-gradient(135deg,#0f2236cc,#1a3a52cc);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.1);border-top:none;border-radius:0 0 10px 10px;padding:2px 18px 4px;cursor:pointer;color:#4a6070;font-size:13px;line-height:1;user-select:none;transition:color .15s}
+#play-hud-tab:hover{color:#bdc3c7}
+.play-title{font-size:16px;font-weight:800;letter-spacing:-.3px;background:linear-gradient(90deg,#1abc9c,#3498db);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;white-space:nowrap}
+.play-score{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:4px 12px;font-size:13px;color:#bdc3c7;display:flex;align-items:center;gap:6px}
+/* cards fill all available space */
+.play-cards{display:flex;gap:10px;align-items:center;justify-content:center;position:relative;width:100vw;height:100vh;padding:12px;box-sizing:border-box}
+.play-card-wrap{display:flex;flex-direction:column;align-items:center;gap:4px;flex:0 0 auto}
+.play-label{font-size:11px;color:#4a6070;font-weight:700;letter-spacing:1px;text-transform:uppercase}
+#play-canvas-left,#play-canvas-right{border-radius:50%;box-shadow:0 6px 32px rgba(0,0,0,.55);cursor:pointer;transition:transform .15s;display:block}
 #play-canvas-left:hover,#play-canvas-right:hover{transform:scale(1.02)}
-.play-hint{font-size:12px;color:#2e4050;margin-top:4px}
+.play-hint{font-size:11px;color:#2e4050;margin-top:2px}
 #play-result{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:50;pointer-events:none;text-align:center;line-height:1.1}
 #play-result.correct{font-size:96px;filter:drop-shadow(0 0 24px #2ecc71) drop-shadow(0 0 48px #2ecc71)}
 #play-result.wrong{font-size:72px;filter:drop-shadow(0 0 24px #e74c3c) drop-shadow(0 0 48px #e74c3c)}
-.play-close{background:rgba(231,76,60,.15);border:1px solid rgba(231,76,60,.3);border-radius:8px;color:#e74c3c;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:600}
+.play-close{background:rgba(231,76,60,.15);border:1px solid rgba(231,76,60,.3);border-radius:8px;color:#e74c3c;padding:5px 12px;cursor:pointer;font-size:12px;font-weight:600}
 .play-close:hover{background:rgba(231,76,60,.3)}
-.play-lbl-toggle{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;color:#bdc3c7;padding:5px 12px;cursor:pointer;font-size:11px;display:flex;align-items:center;gap:5px;user-select:none}
+.play-lbl-toggle{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;color:#bdc3c7;padding:4px 10px;cursor:pointer;font-size:11px;display:flex;align-items:center;gap:5px;user-select:none}
 .play-lbl-toggle:hover{background:rgba(255,255,255,.14)}
 .play-lbl-toggle input{pointer-events:none}
 /* sym label input in gallery */
@@ -204,24 +221,24 @@ main{position:relative}
 <!-- SharePoint / HTTP warning modal -->
 <div id="modal-overlay">
   <div class="modal-box">
-    <h2>&#9888;&#65039; Datei kann nicht direkt aus SharePoint / OneDrive ausgeführt werden</h2>
-    <p>HTML-Dateien über SharePoint oder OneDrive können aus Sicherheitsgründen keine lokalen Funktionen ausführen:</p>
+    <h2>&#9888;&#65039; File cannot be run directly from SharePoint / OneDrive</h2>
+    <p>HTML files opened via SharePoint or OneDrive cannot use local functions for security reasons:</p>
     <ul style="font-size:14px;color:#333;margin:8px 0 8px 20px">
-      <li>🚫 <b>Bilder hochladen</b> funktioniert nicht</li>
-      <li>🚫 <b>Karten speichern</b> funktioniert nicht</li>
-      <li>🚫 <b>Settings laden/speichern</b> funktioniert nicht</li>
+      <li>🚫 <b>Uploading images</b> does not work</li>
+      <li>🚫 <b>Saving cards</b> does not work</li>
+      <li>🚫 <b>Load/save settings</b> does not work</li>
     </ul>
-    <p><b>Bitte so vorgehen:</b></p>
-    <p>1. Datei in SharePoint/OneDrive öffnen &rarr; <code>Herunterladen</code></p>
-    <p>2. Heruntergeladene <code>.html</code>-Datei lokal im Browser öffnen (Doppelklick)</p>
-    <button onclick="document.getElementById('modal-overlay').classList.remove('show')">Verstanden</button>
+    <p><b>Please proceed as follows:</b></p>
+    <p>1. Open the file in SharePoint/OneDrive &rarr; <code>Download</code></p>
+    <p>2. Open the downloaded <code>.html</code> file locally in your browser (double-click)</p>
+    <button onclick="document.getElementById('modal-overlay').classList.remove('show')">Understood</button>
   </div>
 </div>
 
 <!-- ── IMPORT CHOOSER ── -->
 <div id="ic-overlay" class="ic-overlay" onclick="if(event.target===this)closeIC()">
   <div class="ic-panel">
-    <div class="ic-head">📥 &nbsp;Import — Was möchtest du laden?</div>
+    <div class="ic-head">📥 &nbsp;Import — What do you want to load?</div>
     <div class="ic-options">
       <div class="ic-card" onclick="triggerImport('files')">
         <div class="ic-stack">
@@ -229,8 +246,8 @@ main{position:relative}
           <div class="ic-photo">🐠</div>
           <div class="ic-photo">🖼️</div>
         </div>
-        <div class="ic-label">Bilder</div>
-        <div class="ic-sub">PNG · JPG<br>einzeln</div>
+        <div class="ic-label">Images</div>
+        <div class="ic-sub">PNG · JPG<br>single</div>
       </div>
       <div class="ic-card" onclick="triggerImport('grid')">
         <div class="ic-grid4">
@@ -239,29 +256,29 @@ main{position:relative}
           <div class="ic-gc on"></div><div class="ic-gc on"></div><div class="ic-gc"></div><div class="ic-gc on"></div>
           <div class="ic-gc"></div><div class="ic-gc on"></div><div class="ic-gc on"></div><div class="ic-gc on"></div>
         </div>
-        <div class="ic-label">Symbol-Grid</div>
-        <div class="ic-sub">4×4 Bild-<br>Datei(en)</div>
+        <div class="ic-label">Symbol Grid</div>
+        <div class="ic-sub">4×4 image<br>file(s)</div>
         <div class="ic-gopts" onclick="event.stopPropagation()">
-          <label>Rand:&nbsp;<input type="range" id="grid-trim" min="0" max="30" value="6"
+          <label>Trim:&nbsp;<input type="range" id="grid-trim" min="0" max="30" value="6"
             oninput="document.getElementById('ic-trim-val').textContent=this.value">
             <span id="ic-trim-val">6</span>px</label>
-          <label><input type="checkbox" id="grid-autoscale" checked>&nbsp;Auto-Skalierung</label>
+          <label><input type="checkbox" id="grid-autoscale" checked>&nbsp;Auto-Scale</label>
         </div>
       </div>
       <div class="ic-card" onclick="triggerImport('settings')">
         <div style="font-size:44px;margin-bottom:4px">📋</div>
         <div class="ic-label">Settings</div>
-        <div class="ic-sub">.json Datei</div>
+        <div class="ic-sub">.json file</div>
       </div>
       <div class="ic-card" onclick="triggerImport('zip')">
         <div style="font-size:44px;margin-bottom:4px">📦</div>
-        <div class="ic-label">.dbl / ZIP</div>
-        <div class="ic-sub">Bilder · Grids<br>Settings</div>
+        <div class="ic-label">.dbl</div>
+        <div class="ic-sub">Images · Grids<br>Settings</div>
       </div>
       <div class="ic-card" onclick="closeIC();scanDblFolder()">
         <div style="font-size:44px;margin-bottom:4px">🔍</div>
-        <div class="ic-label">Ordner Scan</div>
-        <div class="ic-sub">.dbl Dateien<br>im Ordner</div>
+        <div class="ic-label">Folder Scan</div>
+        <div class="ic-sub">.dbl files<br>in folder</div>
       </div>
     </div>
   </div>
@@ -270,12 +287,12 @@ main{position:relative}
 <!-- ── EXPORT CHOOSER ── -->
 <div id="ec-overlay" class="ic-overlay" onclick="if(event.target===this)closeEC()">
   <div class="ic-panel">
-    <div class="ic-head">📤 &nbsp;Export — Was möchtest du speichern?</div>
+    <div class="ic-head">📤 &nbsp;Export — What do you want to save?</div>
     <div class="ic-options">
       <div class="ic-card" onclick="triggerExport('zip')">
         <div style="font-size:44px;margin-bottom:4px">📦</div>
         <div class="ic-label">.dbl</div>
-        <div class="ic-sub">Bilder +<br>Settings</div>
+        <div class="ic-sub">Images +<br>Settings</div>
       </div>
       <div class="ic-card" onclick="triggerExport('grid')">
         <div class="ic-grid4" style="pointer-events:none">
@@ -284,26 +301,26 @@ main{position:relative}
           <div class="ic-gc on"></div><div class="ic-gc on"></div><div class="ic-gc on"></div><div class="ic-gc on"></div>
           <div class="ic-gc on"></div><div class="ic-gc on"></div><div class="ic-gc on"></div><div class="ic-gc on"></div>
         </div>
-        <div class="ic-label">Symbol-Grids</div>
-        <div class="ic-sub">4 × 4×4 PNG<br>für KI / Edit</div>
+        <div class="ic-label">Symbol Grids</div>
+        <div class="ic-sub">4 × 4×4 PNG<br>for AI / Edit</div>
         <div class="ic-gopts" onclick="event.stopPropagation()" style="margin-top:7px">
-          <label><input type="checkbox" id="grid-scale">&nbsp;Skalierung verwenden</label>
+          <label><input type="checkbox" id="grid-scale">&nbsp;Use scaling</label>
         </div>
       </div>
       <div class="ic-card" onclick="triggerExport('print')">
         <div style="font-size:40px;margin-bottom:4px">🖨️</div>
         <div class="ic-label">Print Studio</div>
-        <div class="ic-sub">Foto-PNG<br>für Druck</div>
+        <div class="ic-sub">Photo-PNG<br>for print</div>
         <div class="ic-gopts" onclick="event.stopPropagation()" style="margin-top:7px">
-          <label style="display:flex;align-items:center;gap:4px"><input type="radio" name="print-mode" value="pair" checked> Paar (akt.)</label>
-          <label style="display:flex;align-items:center;gap:4px"><input type="radio" name="print-mode" value="all"> Alle Paare</label>
-          <label style="display:flex;align-items:center;gap:4px"><input type="radio" name="print-mode" value="card"> Nur Karte</label>
+          <label style="display:flex;align-items:center;gap:4px"><input type="radio" name="print-mode" value="pair" checked> Pair (cur.)</label>
+          <label style="display:flex;align-items:center;gap:4px"><input type="radio" name="print-mode" value="all"> All pairs</label>
+          <label style="display:flex;align-items:center;gap:4px"><input type="radio" name="print-mode" value="card"> Card only</label>
         </div>
       </div>
       <div class="ic-card" onclick="triggerExport('settings')">
         <div style="font-size:44px;margin-bottom:4px">📋</div>
         <div class="ic-label">Settings</div>
-        <div class="ic-sub">.json Datei</div>
+        <div class="ic-sub">.json file</div>
       </div>
     </div>
   </div>
@@ -311,26 +328,29 @@ main{position:relative}
 
 <!-- ── PLAY MODE OVERLAY ── -->
 <div id="play-overlay">
-  <div class="play-header">
-    <span class="play-title">🎴 Spot-It Play</span>
-    <div class="play-score">✅ <span id="play-correct">0</span> &nbsp; ❌ <span id="play-wrong">0</span></div>
-    <label class="play-lbl-toggle">
-      <input type="checkbox" id="play-label-mode"> 🔤 Beschriftungs-Modus
-    </label>
-    <button class="play-close" onclick="closePlay()">✕ Beenden</button>
+  <div id="play-hud">
+    <div id="play-hud-bar">
+      <span class="play-title">🎴 Spot-It Play</span>
+      <div class="play-score">✅ <span id="play-correct">0</span> &nbsp; ❌ <span id="play-wrong">0</span></div>
+      <label class="play-lbl-toggle">
+        <input type="checkbox" id="play-label-mode"> 🔤 Labels
+      </label>
+      <button class="play-close" onclick="closePlay()">✕ Exit</button>
+    </div>
+    <div id="play-hud-tab" onclick="document.getElementById('play-hud').classList.toggle('collapsed')" title="Show/hide menu">▲</div>
   </div>
   <div class="play-cards">
     <div class="play-card-wrap">
-      <div class="play-label">Symbole</div>
+      <div class="play-label">Symbols</div>
       <canvas id="play-canvas-left" width="700" height="700"></canvas>
-      <div class="play-hint">Tippe das gemeinsame Symbol</div>
+      <div class="play-hint">Tap the matching symbol</div>
     </div>
-    <div style="font-size:36px;color:#2e4050">⚡</div>
+    <div style="font-size:28px;color:#2e4050;flex-shrink:0">⚡</div>
     <div class="play-card-wrap">
-      <div class="play-label" id="play-right-label">Symbole</div>
+      <div class="play-label" id="play-right-label">Symbols</div>
       <canvas id="play-canvas-right" width="700" height="700"></canvas>
       <div id="play-labels-card"></div>
-      <div class="play-hint" id="play-right-hint">Klicke hier auf das gleiche</div>
+      <div class="play-hint" id="play-right-hint">Click the match here</div>
     </div>
     <div id="play-result"></div>
   </div>
@@ -339,8 +359,8 @@ main{position:relative}
 <!-- ── Label Editor Overlay ── -->
 <div id="lbl-overlay">
   <div id="lbl-toolbar">
-    <span style="font-size:15px;font-weight:800;color:#ecf0f1;white-space:nowrap">🏷 Beschriftungs-Editor</span>
-    <label>Schriftart:
+    <span style="font-size:15px;font-weight:800;color:#ecf0f1;white-space:nowrap">🏷 Label Editor</span>
+    <label>Font:
       <select id="lbl-font-sel" onchange="_lblUpdateFont()">
         <option value="sans-serif">Sans-Serif</option>
         <option value="serif">Serif</option>
@@ -352,7 +372,7 @@ main{position:relative}
         <option value="cursive">Cursive</option>
       </select>
     </label>
-    <label>Größe:
+    <label>Size:
       <select id="lbl-size-sel" onchange="_lblUpdateFont()">
         <option value="10">10 px</option><option value="12">12 px</option>
         <option value="14" selected>14 px</option><option value="16">16 px</option>
@@ -361,8 +381,8 @@ main{position:relative}
         <option value="32">32 px</option>
       </select>
     </label>
-    <span style="font-size:11px;color:#4a6070;white-space:nowrap">Enter = nächstes Symbol &nbsp;·&nbsp; Shift+Enter = Zeilenumbruch</span>
-    <button id="lbl-close-btn" onclick="closeLblEditor()">✕ Schließen</button>
+    <span style="font-size:11px;color:#4a6070;white-space:nowrap">Enter = next symbol &nbsp;·&nbsp; Shift+Enter = line break</span>
+    <button id="lbl-close-btn" onclick="closeLblEditor()">✕ Close</button>
   </div>
   <div id="lbl-main-area">
     <div id="lbl-content"></div>
@@ -371,24 +391,32 @@ main{position:relative}
 
 <header>
   <div class="hrow">
-    <h1>&#x1F3B4; Spot-It Karten Generator</h1>
-    <span style="font-size:10px;font-weight:700;color:#fff;background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.22);border-radius:5px;padding:2px 7px;letter-spacing:.4px;white-space:nowrap;flex-shrink:0">v 1.11</span>
+    <h1>&#x1F3B4; Spot-It Card Generator</h1>
+    <span style="font-size:10px;font-weight:700;color:#fff;background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.22);border-radius:5px;padding:2px 7px;letter-spacing:.4px;white-space:nowrap;flex-shrink:0">v 1.16</span>
     <div class="hrow-sep"></div>
     <button class="hbtn" style="background:linear-gradient(135deg,#16a085,#1abc9c);font-size:13px;padding:7px 16px" onclick="openIC()">&#x1F4E5; Import</button>
     <button class="hbtn" style="background:linear-gradient(135deg,#e67e22,#f39c12);font-size:13px;padding:7px 16px" onclick="openEC()">&#x1F4E4; Export</button>
     <!-- hidden file inputs – IDs used by JS -->
     <input type="file" id="finput" accept="image/*" multiple style="display:none">
-    <input type="file" id="zinput" accept=".zip,.dbl" style="display:none">
+    <input type="file" id="zinput" accept=".dbl" style="display:none">
     <input type="file" id="ginput" accept="image/*" multiple style="display:none">
     <input type="file" id="settings-input" accept=".json" style="display:none">
     <div class="hrow-sep"></div>
-    <label class="hcheck" style="color:#ecf0f1"><input type="checkbox" id="bg-remove" checked> BG entfernen</label>
+    <label class="hcheck" style="color:#ecf0f1"><input type="checkbox" id="bg-remove" checked> Remove BG</label>
     <label class="hcheck">Tol.:
       <input type="range" id="bg-tol" min="5" max="90" value="40" step="5" style="width:55px">
       <span id="tol-val">40</span>
     </label>
     <div class="hrow-sep"></div>
-    <span id="progress">0 / 57 Bilder geladen</span>
+    <div class="shape-row">
+      <span style="font-size:11px;color:#bdc3c7;white-space:nowrap">Shape:</span>
+      <button class="shape-btn shape-active" data-shape="hexagon" onclick="setCardShape('hexagon')" title="Hexagon – easy to cut!">⬡ Hex</button>
+      <button class="shape-btn" data-shape="octagon" onclick="setCardShape('octagon')" title="Octagon – like a stop sign">⬡ Oct</button>
+      <button class="shape-btn" data-shape="square" onclick="setCardShape('square')" title="Square – simplest cut">⬜ Square</button>
+      <button class="shape-btn" data-shape="circle" onclick="setCardShape('circle')" title="Circle – classic Dobble">⭕ Circle</button>
+    </div>
+    <div class="hrow-sep"></div>
+    <span id="progress">0 / 57 images loaded</span>
   </div>
 </header>
 
@@ -398,9 +426,9 @@ main{position:relative}
   <!-- ── LEFT: Symbol gallery ── -->
   <div class="gallery collapsed" id="gallery-panel">
     <div class="gallery-header">
-      Symbol · Größe (S) &amp; Drehung (R)
+      Symbol · Size (S) &amp; Rotation (R)
       <div class="gl-scale-row">
-        <span>Alle:</span>
+        <span>All:</span>
         <input type="range" id="global-scale" min="20" max="220" value="100" step="5"
                oninput="setGlobalScale(this.value)">
         <span id="gs-val">1.0×</span>
@@ -418,68 +446,72 @@ main{position:relative}
   <!-- ── RIGHT: Card preview ── -->
   <div class="card-area">
     <div class="card-nav">
-      <button class="nav-btn" onclick="navigate(-1)">◀</button>
       <input type="number" id="card-direct" min="1" max="55" value="1"
-             title="Kartennummer direkt eingeben"
+             title="Jump to card number"
              style="width:52px;text-align:center;border:1px solid #ccc;border-radius:4px;
                     padding:3px 4px;font-size:13px;font-weight:600;color:#333">
       <span id="card-num" style="font-size:13px;font-weight:600;color:#555">/ 55</span>
-      <button class="nav-btn" onclick="navigate(1)">▶</button>
     </div>
 
     <input type="range" id="card-slider" min="0" max="54" value="0"
            oninput="gotoCard(+this.value)">
 
-    <div class="canvas-wrap">
-      <canvas id="card-canvas" width="700" height="700"></canvas>
-      <div class="brand-badge" id="brand-badge">
-        <span class="brand-bee">🐝</span>
-        <span class="brand-name">Holger Specht</span>
-        <span class="brand-city">Bad Abbach</span>
-        <div class="brand-sep"></div>
-        <span class="brand-lic">Private License</span>
-        <span class="brand-lic">
+    <div class="canvas-jog-row">
+      <div class="canvas-wrap">
+        <canvas id="card-canvas" width="700" height="700"></canvas>
+        <div class="brand-badge" id="brand-badge">
+          <span class="brand-bee">🐦</span>
+          <span class="brand-name">Holger Specht</span>
+          <span class="brand-city">Bad Abbach</span>
+          <div class="brand-sep"></div>
+          <span class="brand-lic">Private License</span>
+          <span class="brand-lic">
+        </div>
+      </div>
+      <div class="jog-wrap">
+        <div class="jog-wheel" id="jog-wheel">
+          <div class="jog-ridges" id="jog-ridges"></div>
+          <div class="jog-center"></div>
+        </div>
+        <div class="jog-lbl" id="jog-lbl">1 / 55</div>
       </div>
     </div>
 
+    <!-- hidden inputs keep JS references intact; border fixed black, bg fixed white -->
+    <input type="hidden" id="bg-color" value="#ffffff">
+    <input type="hidden" id="border-color" value="#000000">
+    <input type="hidden" id="show-ring">
     <div class="bg-row">
-      <label for="bg-color">Karten-Hintergrund:</label>
-      <input type="color" id="bg-color" value="#ffffff" oninput="renderCard()">
-      <label for="border-color">Rand:</label>
-      <input type="color" id="border-color" value="#888888" oninput="renderCard()">
-      <span style="font-size:12px;color:#666;margin-left:10px">Ring±:</span>
+      <span style="font-size:12px;color:#666">Ring±:</span>
       <input type="range" id="card-ring-r" min="-100" max="100" value="0" step="5"
-             title="Ring-Radius dieser Karte feinjustieren"
+             title="Fine-tune ring radius for this card"
              style="width:90px;accent-color:#2980b9"
              oninput="setCardRingR(+this.value)">
       <span id="crr-val" style="font-size:11px;color:#555;min-width:28px">0</span>
-      <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:#555;margin-left:10px;cursor:pointer">
-        <input type="checkbox" id="show-ring" onchange="renderCard()"> Ring einzeichnen
-      </label>
     </div>
 
     <div class="actions" style="justify-content:space-between">
       <div style="display:flex;gap:8px;align-items:center">
-            <button class="btn btn-rand"     onclick="randomizeCurrent()">&#x1F500; Würfeln (diese Karte)</button>
-        <button class="btn btn-rand-all" onclick="randomizeAll()">&#x1F500; Alle neu würfeln</button>
+            <button class="btn btn-rand"     onclick="randomizeCurrent()">&#x1F500; Shuffle (this card)</button>
+        <button class="btn btn-rand-all" onclick="randomizeAll()">&#x1F500; Shuffle all</button>
         <button class="btn" style="background:#16a085;color:#fff" onclick="openPlay()">▶ Play</button>
         <button class="btn" style="background:#8e44ad;color:#fff" onclick="openLblEditor()">🏷 Labels</button>
       </div>
     </div>
     <div id="dl-status"></div>
     <details style="font-size:11px;color:#888;text-align:center;max-width:600px;cursor:pointer;margin-top:2px">
-      <summary style="color:#aaa;user-select:none">&#9000; Tastaturkürzel</summary>
+      <summary style="color:#aaa;user-select:none">&#9000; Keyboard shortcuts</summary>
       <div style="margin-top:5px;line-height:2;color:#777">
-        <b>Klick</b> = Symbol wählen &nbsp;·&nbsp;
-        <b>Drag</b> = verschieben &nbsp;·&nbsp;
-        <b>Doppelklick</b> = Position reset &nbsp;·&nbsp;
-        <b>◄►▲▼</b> = bewegen &nbsp;·&nbsp;
-        <b>Shift+◄►▲▼</b> = fein &nbsp;·&nbsp;
-        <b>Ctrl+◄►</b> = drehen &nbsp;·&nbsp;
-        <b>Leertaste</b> = größer &nbsp;·&nbsp;
-        <b>Shift+Leertaste</b> = kleiner &nbsp;·&nbsp;
-        <b>Del</b> = Pos-Reset &nbsp;·&nbsp;
-        <b>Esc</b> = abwählen &nbsp;·&nbsp;
+        <b>Click</b> = select symbol &nbsp;·&nbsp;
+        <b>Drag</b> = move &nbsp;·&nbsp;
+        <b>Double-click</b> = reset position &nbsp;·&nbsp;
+        <b>◄►▲▼</b> = move &nbsp;·&nbsp;
+        <b>Shift+◄►▲▼</b> = fine &nbsp;·&nbsp;
+        <b>Ctrl+◄►</b> = rotate &nbsp;·&nbsp;
+        <b>Space</b> = bigger &nbsp;·&nbsp;
+        <b>Shift+Space</b> = smaller &nbsp;·&nbsp;
+        <b>Del</b> = reset pos &nbsp;·&nbsp;
+        <b>Esc</b> = deselect &nbsp;·&nbsp;
         <b>Ctrl+Z/Y</b> = Undo/Redo
       </div>
     </details>
@@ -649,7 +681,7 @@ function _playRenderCard(ctx, cardIdx, labelMode) {
   const card   = SPOT_IT[cardIdx];
   const layout = layouts[cardIdx];
   ctx.save();
-  ctx.beginPath(); ctx.arc(350,350,320,0,Math.PI*2);
+  makeCardPath(ctx, 350, 350, 320, cardShape);
   ctx.fillStyle = bgColor; ctx.fill(); ctx.clip();
   const positions = computePositions(card, layout);
   for (let pos=0;pos<8;pos++) {
@@ -695,7 +727,7 @@ function _playRenderCard(ctx, cardIdx, labelMode) {
     ctx.restore();
   }
   ctx.restore();
-  ctx.beginPath(); ctx.arc(350,350,320,0,Math.PI*2);
+  makeCardPath(ctx, 350, 350, 320, cardShape);
   ctx.strokeStyle=borderColor; ctx.lineWidth=3; ctx.stroke();
 }
 
@@ -877,13 +909,31 @@ document.getElementById('play-label-mode').addEventListener('change', () => {
   if (playActive) _playRenderBoth();
 });
 
+function _playResizeCards() {
+  // Compute the largest square that fits 2 cards side by side with gap and margin
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const MARGIN = 24, GAP = 12, LIGHTNING = 36, LABEL_H = 36;
+  // available width split between 2 cards + gap + lightning icon
+  const availW = (vw - 2*MARGIN - GAP - LIGHTNING) / 2;
+  // available height (reserve top for HUD ~52px + labels ~36px)
+  const availH = vh - 52 - LABEL_H - MARGIN;
+  const sz = Math.max(120, Math.floor(Math.min(availW, availH)));
+  document.getElementById('play-canvas-left').style.width  = sz + 'px';
+  document.getElementById('play-canvas-left').style.height = sz + 'px';
+  document.getElementById('play-canvas-right').style.width  = sz + 'px';
+  document.getElementById('play-canvas-right').style.height = sz + 'px';
+}
+
 function openPlay() {
   playActive = true;
   playCorrect = 0; playWrong = 0;
   document.getElementById('play-correct').textContent = '0';
   document.getElementById('play-wrong').textContent = '0';
   document.getElementById('play-result').textContent = '';
+  document.getElementById('play-hud').classList.remove('collapsed');
+  document.getElementById('play-hud-tab').textContent = '▲';
   document.getElementById('play-overlay').classList.add('show');
+  _playResizeCards();
   _playNextRound();
 }
 function closePlay() {
@@ -1073,7 +1123,7 @@ for (let i = 0; i < N_SYM; i++) {
   c.className = 'sym-canvas';
   c.width = 44; c.height = 44;
   c.id = `thumb${i}`;
-  c.title = `Symbol ${i+1} – klicken um Karte zu zeigen`;
+  c.title = `Symbol ${i+1} – click to show card`;
   c.style.cursor = 'pointer';
   c.addEventListener('click', () => {
     // collect all cards containing this symbol, then cycle through them
@@ -1320,7 +1370,7 @@ function applyAutoScale(idx, img) {
 async function processImageList(items, autoScale = true) {
   const n = Math.min(items.length, N_SYM);
   loadedCount = 0;
-  document.getElementById('progress').textContent = `0 / ${n} Bilder geladen…`;
+  document.getElementById('progress').textContent = `0 / ${n} images loaded…`;
   for (let idx = 0; idx < n; idx++) {
     const url = items[idx].url;
     await new Promise(resolve => {
@@ -1335,7 +1385,7 @@ async function processImageList(items, autoScale = true) {
         paintThumb(idx, final);
         loadedCount++;
         document.getElementById('progress').textContent =
-          `${loadedCount} / ${n} Bilder geladen`;
+          `${loadedCount} / ${n} images loaded`;
         renderCard();
         resolve();
       };
@@ -1448,7 +1498,7 @@ async function splitGridImage(file) {
         }
         resolve(urls);
       };
-      src.onerror = () => reject(new Error('Bild konnte nicht geladen werden'));
+      src.onerror = () => reject(new Error('Image could not be loaded'));
       src.src = ev.target.result;
     };
     reader.readAsDataURL(file);
@@ -1467,10 +1517,10 @@ document.getElementById('ginput').addEventListener('change', async e => {
     const tiles = await splitGridImage(file);
     tiles.forEach((url, i) => items.push({ name: `${file.name}_t${String(i+1).padStart(2,'0')}`, url }));
   }
-  status.textContent = `⏳ Lade ${items.length} Symbole…`;
+  status.textContent = `⏳ Loading ${items.length} symbols…`;
   const autoScale = document.getElementById('grid-autoscale').checked;
   await processImageList(items, autoScale);
-  status.textContent = `✓ ${items.length} Symbole aus Grid(s) geladen!`;
+  status.textContent = `✓ ${items.length} symbols loaded from grid(s)!`;
   setTimeout(() => status.textContent = '', 5000);
 });
 
@@ -1556,7 +1606,7 @@ document.getElementById('zinput').addEventListener('change', async e => {
 });
 
 async function _loadDblFile(file) {
-  document.getElementById('progress').textContent = '.dbl wird gelesen…';
+  document.getElementById('progress').textContent = 'Reading .dbl…';
   try {
     const buffer = await file.arrayBuffer();
     const all    = await readZipImages(buffer);
@@ -1569,22 +1619,22 @@ async function _loadDblFile(file) {
       } catch(_) {}
     }
     if (!items.length && !settingsEntries.length) {
-      document.getElementById('progress').textContent = 'Keine Bilder/Settings gefunden';
+      document.getElementById('progress').textContent = 'No images/settings found';
       return;
     }
     if (items.length) await processImageList(items);
     items.forEach(it => URL.revokeObjectURL(it.url));
     if (!items.length && settingsEntries.length)
-      document.getElementById('progress').textContent = `✓ Settings geladen!`;
+      document.getElementById('progress').textContent = `✓ Settings loaded!`;
   } catch(err) {
-    document.getElementById('progress').textContent = 'Fehler: ' + err.message;
+    document.getElementById('progress').textContent = 'Error: ' + err.message;
   }
 }
 
 // ── Directory scan ──────────────────────────────────────────
 async function scanDblFolder() {
   if (!window.showDirectoryPicker) {
-    alert('Ordner-Scan benötigt Chrome oder Edge (File System Access API).');
+    alert('Folder scan requires Chrome or Edge (File System Access API).');
     return;
   }
   let dirHandle;
@@ -1599,9 +1649,9 @@ async function scanDblFolder() {
     overlay.id = 'scan-overlay';
     overlay.innerHTML =
       `<div id="scan-header">
-         <h2>🔍 .dbl Dateien in Ordner</h2>
-         <span id="scan-status">Scanne…</span>
-         <button id="scan-close-btn" onclick="document.getElementById('scan-overlay').classList.remove('show')">&#x2715; Schließen</button>
+         <h2>🔍 .dbl files in folder</h2>
+         <span id="scan-status">Scanning…</span>
+         <button id="scan-close-btn" onclick="document.getElementById('scan-overlay').classList.remove('show')">&#x2715; Close</button>
        </div>
        <div id="scan-list"></div>`;
     document.body.appendChild(overlay);
@@ -1615,18 +1665,18 @@ async function scanDblFolder() {
   try {
     for await (const [name, handle] of dirHandle.entries()) {
       try {
-        if (handle.kind === 'file' && /\.(dbl|zip)$/i.test(name)) {
+        if (handle.kind === 'file' && /\.dbl$/i.test(name)) {
           found.push({ name, handle });
         }
       } catch(e) { /* skip unreadable entries */ }
     }
   } catch(e) {
-    status.textContent = 'Scan-Fehler: ' + e.message;
+    status.textContent = 'Scan error: ' + e.message;
   }
 
-  status.textContent = `${found.length} Datei(en) gefunden`;
+  status.textContent = `${found.length} file(s) found`;
   if (!found.length) {
-    list.innerHTML = '<div style="color:#4a6070;padding:32px">Keine .dbl oder .zip Dateien gefunden.</div>';
+    list.innerHTML = '<div style="color:#4a6070;padding:32px">No .dbl files found.</div>';
     return;
   }
 
@@ -1674,7 +1724,7 @@ async function scanDblFolder() {
       } catch(e) {
         const err = document.createElement('div');
         err.className = 'scan-err';
-        err.textContent = 'Lesefehler';
+        err.textContent = 'Read error';
         card.appendChild(err);
       }
     })();
@@ -1690,6 +1740,45 @@ const CW = 700, CH = 700, cx = 350, cy = 350;
 const CARD_R  = 320;   // card circle radius (px)
 let   ringR   = 195;   // global ring radius for outer 7 symbols (adjustable)
 const BASE_SZ = 115;   // base image size at scale = 1.0
+let   cardShape = 'hexagon'; // 'hexagon' | 'octagon' | 'square' | 'circle'
+
+// ── Card shape path helper ──
+function makeCardPath(c, pcx, pcy, r, shape) {
+  c.beginPath();
+  if (shape === 'circle') {
+    c.arc(pcx, pcy, r, 0, Math.PI * 2);
+  } else {
+    const sides = shape === 'hexagon' ? 6 : shape === 'octagon' ? 8 : 4;
+    // offset=0 → flat-top hex (horizontal edges); π/8 → flat-top oct; π/4 → axis-aligned square
+    const offset = shape === 'octagon' ? Math.PI / 8 : shape === 'square' ? Math.PI / 4 : 0;
+    const cornerR = r * 0.07;  // slight corner rounding (~22px for r=320)
+    const pts = [];
+    for (let i = 0; i < sides; i++) {
+      const a = offset + (i / sides) * Math.PI * 2;
+      pts.push([pcx + r * Math.cos(a), pcy + r * Math.sin(a)]);
+    }
+    // Start at midpoint of last→first edge, then arcTo at each vertex
+    const last = pts[sides - 1], first = pts[0];
+    c.moveTo((last[0] + first[0]) / 2, (last[1] + first[1]) / 2);
+    for (let i = 0; i < sides; i++) {
+      const curr = pts[i];
+      const next = pts[(i + 1) % sides];
+      c.arcTo(curr[0], curr[1], (curr[0] + next[0]) / 2, (curr[1] + next[1]) / 2, cornerR);
+    }
+    c.closePath();
+  }
+}
+
+function setCardShape(shape) {
+  cardShape = shape;
+  // Update CSS border-radius on all canvases
+  const br = shape === 'circle' ? '50%' : '0';
+  document.getElementById('card-canvas').style.borderRadius = br;
+  document.querySelectorAll('#play-canvas-left,#play-canvas-right,.scan-card canvas').forEach(el => el.style.borderRadius = br);
+  // Update active button
+  document.querySelectorAll('.shape-btn').forEach(b => b.classList.toggle('shape-active', b.dataset.shape === shape));
+  renderCard();
+}
 
 function renderCard() {
   ctx.clearRect(0, 0, CW, CH);
@@ -1697,10 +1786,9 @@ function renderCard() {
   const bgColor     = document.getElementById('bg-color').value;
   const borderColor = document.getElementById('border-color').value;
 
-  // Draw card circle + clip
+  // Draw card shape + clip
   ctx.save();
-  ctx.beginPath();
-  ctx.arc(cx, cy, CARD_R, 0, Math.PI * 2);
+  makeCardPath(ctx, cx, cy, CARD_R, cardShape);
   ctx.fillStyle = bgColor;
   ctx.fill();
   ctx.clip();
@@ -1786,8 +1874,7 @@ function renderCard() {
   ctx.restore();  // remove clip
 
   // Card border (drawn after clip removal so it's always fully visible)
-  ctx.beginPath();
-  ctx.arc(cx, cy, CARD_R, 0, Math.PI * 2);
+  makeCardPath(ctx, cx, cy, CARD_R, cardShape);
   ctx.strokeStyle = borderColor;
   ctx.lineWidth = 3;
   ctx.stroke();
@@ -1816,6 +1903,11 @@ function gotoCard(idx) {
   document.getElementById('card-num').textContent = `/ ${N_CARD}`;
   const di = document.getElementById('card-direct');
   if (di) di.value = currentCard + 1;
+  // Update jog wheel label + ridge animation
+  const jl = document.getElementById('jog-lbl');
+  if (jl) jl.textContent = `${currentCard + 1} / ${N_CARD}`;
+  const jr = document.getElementById('jog-ridges');
+  if (jr) jr.style.transform = `translateY(${-(currentCard * 5.5) % 22}px)`;
   // Also update card ring-r slider when switching cards
   const crr = document.getElementById('card-ring-r');
   const crrv = document.getElementById('crr-val');
@@ -1827,6 +1919,41 @@ function gotoCard(idx) {
   renderCard();
 }
 function navigate(d) { gotoCard(currentCard + d); }
+
+// ── Jog Wheel ──
+;(function initJogWheel() {
+  const wheel = document.getElementById('jog-wheel');
+  if (!wheel) return;
+  let dragActive = false, startY = 0, startCard = 0;
+  function onStart(y) { dragActive = true; startY = y; startCard = currentCard; }
+  function onMove(y) {
+    if (!dragActive) return;
+    const dy = startY - y;   // drag up = forward
+    gotoCard(startCard + Math.round(dy / 18));
+  }
+  function onEnd() { dragActive = false; }
+  wheel.addEventListener('mousedown', e => { onStart(e.clientY); e.preventDefault(); });
+  window.addEventListener('mousemove', e => { if (dragActive) onMove(e.clientY); });
+  window.addEventListener('mouseup', onEnd);
+  wheel.addEventListener('touchstart', e => { onStart(e.touches[0].clientY); e.preventDefault(); }, {passive:false});
+  wheel.addEventListener('touchmove', e => { if (dragActive) { onMove(e.touches[0].clientY); e.preventDefault(); } }, {passive:false});
+  wheel.addEventListener('touchend', onEnd);
+  wheel.addEventListener('wheel', e => { e.preventDefault(); navigate(e.deltaY > 0 ? 1 : -1); }, {passive:false});
+})();
+
+// Play HUD: toggle arrow label when collapsed/expanded
+;(function() {
+  const hud = document.getElementById('play-hud');
+  const tab = document.getElementById('play-hud-tab');
+  if (!hud || !tab) return;
+  const obs = new MutationObserver(() => {
+    tab.textContent = hud.classList.contains('collapsed') ? '▼' : '▲';
+  });
+  obs.observe(hud, {attributes:true, attributeFilter:['class']});
+})();
+
+// Resize play canvases when window changes while play is open
+window.addEventListener('resize', () => { if (playActive) _playResizeCards(); });
 
 // Keyboard navigation
 document.addEventListener('keydown', e => {
@@ -1928,7 +2055,7 @@ async function dlAll() {
   const orig   = currentCard;
   for (let i = 0; i < N_CARD; i++) {
     gotoCard(i);
-    status.textContent = `⏳ Exportiere Karte ${i+1} / ${N_CARD}…`;
+    status.textContent = `⏳ Exporting card ${i+1} / ${N_CARD}…`;
     await new Promise(r => setTimeout(r, 80));   // let canvas render
     await new Promise(resolve => canvas.toBlob(blob => {
       triggerDownload(blob, `SPOT_IT-${String(i+1).padStart(2,'0')}.png`);
@@ -1937,7 +2064,7 @@ async function dlAll() {
     await new Promise(r => setTimeout(r, 250));  // avoid browser download throttling
   }
   gotoCard(orig);
-  status.textContent = '✓ Alle 55 Karten exportiert!';
+  status.textContent = '✓ All 55 cards exported!';
   setTimeout(() => status.textContent = '', 5000);
 }
 
@@ -1989,7 +2116,7 @@ async function dlSymbolGrid() {
   }
 
   for (let p = 0; p < N_PAGES; p++) {
-    status.textContent = `⏳ Erstelle Symbol-Grid ${p+1} / ${N_PAGES}…`;
+    status.textContent = `⏳ Creating symbol grid ${p+1} / ${N_PAGES}…`;
     const gc = document.createElement('canvas');
     gc.width = W; gc.height = H;
     const g = gc.getContext('2d');
@@ -2003,7 +2130,7 @@ async function dlSymbolGrid() {
     await new Promise(r => setTimeout(r, 300));
   }
 
-  status.textContent = `✓ 4 Symbol-Grid-Seiten exportiert!`;
+  status.textContent = `✓ 4 symbol grid pages exported!`;
   setTimeout(() => status.textContent = '', 4000);
 }
 
@@ -2039,20 +2166,20 @@ async function triggerImport(mode) {
           const tiles = await splitGridImage(file);
           tiles.forEach((url, i) => items.push({ name: `${file.name}_t${String(i+1).padStart(2,'0')}`, url }));
         }
-        status.textContent = `⏳ Lade ${items.length} Symbole…`;
+        status.textContent = `⏳ Loading ${items.length} symbols…`;
         const autoScale = document.getElementById('grid-autoscale').checked;
         await processImageList(items, autoScale);
-        status.textContent = `✓ ${items.length} Symbole aus Grid(s) geladen!`;
+        status.textContent = `✓ ${items.length} symbols loaded from grid(s)!`;
         setTimeout(() => status.textContent = '', 5000);
       } else if (mode === 'settings') {
         const [handle] = await showOpenFilePicker({ startIn: 'downloads',
           types: [{ description: 'JSON Settings', accept: {'application/json': ['.json']} }] });
         const file = await handle.getFile();
         try { _applySettings(JSON.parse(await file.text())); }
-        catch(err) { alert('Fehler beim Laden: ' + err.message); }
+        catch(err) { alert('Error loading: ' + err.message); }
       } else if (mode === 'zip') {
         const [handle] = await showOpenFilePicker({ startIn: 'downloads',
-          types: [{ description: 'Spot-It Datei', accept: {'application/octet-stream': ['.dbl','.zip']} }] });
+          types: [{ description: 'Spot-It File', accept: {'application/octet-stream': ['.dbl']} }] });
         await _loadDblFile(await handle.getFile());
       }
       return;
@@ -2096,9 +2223,9 @@ async function dlAllPairsZip() {
   }
   // Settings
   files.push({ name: 'SPOT_IT-settings.json', data: new TextEncoder().encode(JSON.stringify(buildSettingsObj(), null, 2)) });
-  status.textContent = '⏳ Erstelle ZIP…';
+  status.textContent = '⏳ Creating ZIP…';
   triggerDownload(new Blob([_buildZip(files)], {type:'application/zip'}), 'SPOT_IT-print-all.zip');
-  status.textContent = `✓ ZIP: ${total} Paare exportiert (letztes = Karte 55 + Branding)!`;
+  status.textContent = `✓ ZIP: ${total} pairs exported (last = card 55 + branding)!`;
   setTimeout(() => status.textContent = '', 6000);
 }
 
@@ -2219,7 +2346,7 @@ function _buildZip(files) {
 }
 async function dlZip() {
   const status=document.getElementById('dl-status');
-  status.textContent='⏳ ZIP wird erstellt…';
+  status.textContent='⏳ Creating ZIP…';
   const files=[];
   for(let i=0;i<57;i++){
     if(!images[i]) continue;
@@ -2234,7 +2361,7 @@ async function dlZip() {
   const settingsBytes=new TextEncoder().encode(JSON.stringify(buildSettingsObj(),null,2));
   files.push({name:'SPOT_IT-settings.json', data:settingsBytes});
   triggerDownload(new Blob([_buildZip(files)],{type:'application/octet-stream'}),'SPOT_IT-export.dbl');
-  status.textContent=`✓ .dbl: ${files.length-1} Bilder + Settings exportiert`;
+  status.textContent=`✓ .dbl: ${files.length-1} images + settings exported`;
   setTimeout(()=>status.textContent='',5000);
 }
 
@@ -2317,7 +2444,7 @@ document.getElementById('settings-input').addEventListener('change', e => {
   const fr = new FileReader();
   fr.onload = ev => {
     try { _applySettings(JSON.parse(ev.target.result)); }
-    catch(err) { alert('Fehler beim Laden: ' + err.message); }
+    catch(err) { alert('Error loading: ' + err.message); }
   };
   fr.readAsText(file);
   e.target.value = '';
@@ -2326,7 +2453,7 @@ document.getElementById('settings-input').addEventListener('change', e => {
 // ═══════════════════════════════════════════════════════════════
 // PRINT PAIR  –  2 Karten auf einem Foto-Querformat-Canvas
 // Foto 15x10 cm bei 300 dpi = 1772 x 1181 px
-// 2 Kreise à 700px nebeneinander, zentriert, mit weißem Rand
+// DIAM=900: circles nearly touch (8px gap), MARGIN=20px (~1.7mm), utilization 51%
 // ═══════════════════════════════════════════════════════════════
 async function renderCardToCanvas(cardIdx) {
   const offscreen = document.createElement('canvas');
@@ -2339,8 +2466,7 @@ async function renderCardToCanvas(cardIdx) {
   const layout = layouts[cardIdx];
 
   oc.save();
-  oc.beginPath();
-  oc.arc(350, 350, 320, 0, Math.PI * 2);
+  makeCardPath(oc, 350, 350, 320, cardShape);
   oc.fillStyle = bgColor;
   oc.fill();
   oc.clip();
@@ -2372,8 +2498,7 @@ async function renderCardToCanvas(cardIdx) {
   }
 
   oc.restore();
-  oc.beginPath();
-  oc.arc(350, 350, 320, 0, Math.PI * 2);
+  makeCardPath(oc, 350, 350, 320, cardShape);
   oc.strokeStyle = borderColor; oc.lineWidth = 3; oc.stroke();
   return offscreen;
 }
@@ -2390,11 +2515,11 @@ async function dlAllPairs() {
   for (let p = 0; p < total; p++) {
     const idxA = p * 2;
     const idxB = (idxA + 1 < N_CARD) ? idxA + 1 : null;  // last: branding instead of duplicate
-    status.textContent = `⏳ Exportiere Paar ${p+1} / ${total}…`;
+    status.textContent = `⏳ Exporting pair ${p+1} / ${total}…`;
     await renderAndDownloadPair(idxA, idxB);
     await new Promise(r => setTimeout(r, 300));
   }
-  status.textContent = `✓ Alle ${total} Karten-Seiten exportiert (Seite ${total} = Karte 55 + Branding)`;
+  status.textContent = `✓ All ${total} card pages exported (page ${total} = card 55 + branding)`;
   setTimeout(() => status.textContent = '', 8000);
 }
 
@@ -2428,10 +2553,11 @@ async function renderBrandingPage() {
 
 async function renderAndDownloadPair(idxA, idxB) {
   // Photo size 15x10 cm at 300 dpi = 1772 x 1181 px
+  // DIAM=900: circles nearly touch (8 px gap), MARGIN=20 px (~1.7 mm), utilization 51%
   const PW = 1772, PH = 1181;
-  const MARGIN = 59;   // 5 mm @ 300 dpi
-  const GAP    = 10;   // minimal gap between the two cards
-  const DIAM   = Math.min(Math.floor((PW - 2*MARGIN - GAP) / 2), PH - 2*MARGIN); // 822
+  const MARGIN = 20;   // ~1.7 mm @ 300 dpi — minimal print margin
+  const DIAM   = 900;  // maximized: card circles nearly touch (~8 px gap between edges)
+  const GAP    = -69;  // negative: bounding boxes overlap so circles almost touch
   const offX   = MARGIN;
   const offY   = Math.round((PH - DIAM) / 2);
 

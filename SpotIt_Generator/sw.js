@@ -1,7 +1,7 @@
-// SpotIt Generator — Service Worker v1.0
+// SpotIt Generator — Service Worker v1.1
 // Cacht die App für Offline-Nutzung
 
-const CACHE_NAME = 'spotit-v1';
+const CACHE_NAME = 'spotit-v3';
 const ASSETS = [
   './',
   './spotit_generator.html',
@@ -10,6 +10,7 @@ const ASSETS = [
   './icons/icon-512.png'
 ];
 
+// Install: alle Assets voraus-cachen
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
@@ -17,6 +18,7 @@ self.addEventListener('install', event => {
   self.skipWaiting();
 });
 
+// Activate: alte Caches löschen
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys =>
@@ -26,22 +28,42 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
+// Fetch: Cache-first für eigene Assets, Network-first für alles andere
 self.addEventListener('fetch', event => {
-  // Nur same-origin Requests cachen
-  if (!event.request.url.startsWith(self.location.origin)) return;
+  const url = new URL(event.request.url);
+
+  // Nur GET-Requests behandeln
+  if (event.request.method !== 'GET') return;
+
+  // Nicht-same-origin Requests (z.B. CDNs) direkt durchlassen
+  if (url.origin !== self.location.origin) return;
 
   event.respondWith(
     caches.match(event.request).then(cached => {
-      if (cached) return cached;
+      if (cached) {
+        // Cache hit → sofort liefern, im Hintergrund updaten
+        const fetchPromise = fetch(event.request).then(response => {
+          if (response && response.status === 200) {
+            caches.open(CACHE_NAME).then(cache => cache.put(event.request, response.clone()));
+          }
+          return response;
+        }).catch(() => cached);
+        return cached;
+      }
+
+      // Cache miss → Netzwerk versuchen, bei Fehler Offline-Fallback
       return fetch(event.request).then(response => {
-        // Nur gültige Responses cachen
         if (!response || response.status !== 200 || response.type !== 'basic') {
           return response;
         }
         const toCache = response.clone();
         caches.open(CACHE_NAME).then(cache => cache.put(event.request, toCache));
         return response;
+      }).catch(() => {
+        // Offline-Fallback: Hauptseite aus Cache liefern
+        return caches.match('./spotit_generator.html');
       });
     })
   );
 });
+

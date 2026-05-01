@@ -1,26 +1,42 @@
 {
-  "name": "Spot-It Karten Generator",
+  "id": "/Tools/SpotIt_Generator/",
+  "name": "Spot-It Card Generator",
   "short_name": "SpotIt",
-  "description": "Erstelle individuelle Spot-It / Dobble Karten mit eigenen Bildern.",
+  "description": "Create custom Spot-It match cards with your own images.",
   "start_url": "https://hogisp.github.io/Tools/SpotIt_Generator/spotit_generator.html",
   "scope": "https://hogisp.github.io/Tools/SpotIt_Generator/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
   "orientation": "landscape",
   "background_color": "#1a252f",
   "theme_color": "#1a252f",
   "lang": "de",
+  "dir": "ltr",
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
   "categories": ["games", "education", "utilities"],
@@ -38,6 +54,28 @@
       "type": "image/png",
       "form_factor": "narrow",
       "label": "Spot-It Generator – Mobile Ansicht"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Neue Karten erstellen",
+      "url": "https://hogisp.github.io/Tools/SpotIt_Generator/spotit_generator.html",
+      "description": "Spot-It Karten Generator öffnen"
+    }
+  ],
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
+  "file_handlers": [
+    {
+      "action": "https://hogisp.github.io/Tools/SpotIt_Generator/spotit_generator.html",
+      "accept": {
+        "application/zip": [".dbl"]
+      },
+      "icons": [
+        { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" }
+      ],
+      "launch_type": "single-client"
     }
   ]
 }
