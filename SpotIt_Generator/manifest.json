@@ -10,7 +10,7 @@
   "orientation": "landscape",
   "background_color": "#1a252f",
   "theme_color": "#1a252f",
-  "lang": "de",
+  "lang": "en",
   "dir": "ltr",
   "prefer_related_applications": false,
   "icons": [
@@ -46,21 +46,21 @@
       "sizes": "1280x800",
       "type": "image/png",
       "form_factor": "wide",
-      "label": "Spot-It Generator – Desktop Ansicht"
+      "label": "Spot-It Generator – Desktop view"
     },
     {
       "src": "screenshots/screenshot-narrow.png",
       "sizes": "390x844",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "Spot-It Generator – Mobile Ansicht"
+      "label": "Spot-It Generator – Mobile view"
     }
   ],
   "shortcuts": [
     {
-      "name": "Neue Karten erstellen",
+      "name": "Create cards",
       "url": "https://hogisp.github.io/Tools/SpotIt_Generator/spotit_generator.html",
-      "description": "Spot-It Karten Generator öffnen"
+      "description": "Open Spot-It Card Generator"
     }
   ],
   "launch_handler": {
