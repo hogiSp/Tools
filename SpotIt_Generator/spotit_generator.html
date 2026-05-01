@@ -1,0 +1,2772 @@
+﻿<!DOCTYPE html>
+<html lang="de"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spot-It Karten Generator</title>
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1a252f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SpotIt">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
+    });
+  }
+</script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:#e8ecef;display:flex;flex-direction:column;height:100vh;overflow:hidden}
+
+/* ── HEADER ── */
+header{background:#1a252f;color:#fff;padding:8px 16px 6px;display:flex;flex-direction:column;gap:5px;flex-shrink:0}
+.hrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.hrow-sep{width:1px;height:22px;background:rgba(255,255,255,.18);flex-shrink:0;margin:0 2px}
+header h1{font-size:1.05rem;white-space:nowrap;margin-right:4px}
+.hbtn{background:#2980b9;border:none;color:#fff;padding:6px 13px;border-radius:5px;cursor:pointer;font-size:12px;white-space:nowrap}
+.hbtn:hover{filter:brightness(1.18)}
+.hcheck{display:flex;align-items:center;gap:5px;font-size:11px;color:#bdc3c7;cursor:pointer;white-space:nowrap}
+.hcheck input[type=range]{accent-color:#e67e22}
+#progress{font-size:11px;color:#bdc3c7;margin-left:4px}
+
+/* ── LAYOUT ── */
+main{flex:1;display:flex;overflow:hidden}
+
+/* ── GALLERY (left) ── */
+.gallery{width:380px;min-width:280px;background:#fff;overflow-y:auto;border-right:2px solid #dde;flex-shrink:0}
+.gallery-header{padding:6px 10px 4px;font-size:11px;font-weight:700;color:#666;background:#f7f7f7;border-bottom:1px solid #eee;position:sticky;top:0;z-index:1;text-transform:uppercase;letter-spacing:.4px}
+.gl-scale-row{display:flex;align-items:center;gap:5px;margin-top:4px;text-transform:none;letter-spacing:0}
+.gl-scale-row input[type=range]{flex:1;height:14px;accent-color:#e67e22}
+.gl-scale-row span{font-size:10px;color:#888;font-weight:400;white-space:nowrap}
+.sym-row{display:flex;align-items:center;gap:6px;padding:4px 8px;border-bottom:1px solid #f2f2f2;transition:background .12s;border-left:3px solid transparent}
+.sym-row.on-card{background:#dff0fd;border-left:3px solid #2980b9}
+.sym-canvas{width:44px;height:44px;border-radius:4px;flex-shrink:0;background:#f5f5f5;cursor:pointer}
+.sym-canvas:hover{outline:2px solid #3498db}
+.sym-num{font-size:11px;color:#bbb;width:18px;text-align:right;flex-shrink:0}
+.sym-sliders{flex:1;display:flex;flex-direction:column;gap:3px}
+.sl-row{display:flex;align-items:center;gap:4px}
+.sl-label{font-size:10px;color:#999;width:10px;flex-shrink:0;font-weight:600}
+.sl-row input[type=range]{flex:1;height:16px;accent-color:#2980b9;cursor:pointer}
+.sl-val{font-size:10px;color:#555;width:34px;text-align:right;flex-shrink:0}
+.sym-actions{display:flex;flex-direction:column;gap:3px;flex-shrink:0}
+.sym-act-btn{background:none;border:1px solid #ddd;border-radius:4px;cursor:pointer;font-size:13px;padding:1px 5px;line-height:1.4;color:#888;transition:background .1s,color .1s}
+.sym-act-btn:hover{background:#fee;color:#c0392b;border-color:#c0392b}
+.sym-act-btn.add:hover{background:#eaf6ec;color:#27ae60;border-color:#27ae60}
+
+/* ── CARD AREA (right) ── */
+.card-area{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px;min-width:0;overflow:hidden}
+.card-nav{display:flex;align-items:center;gap:10px}
+.nav-btn{background:#1a252f;color:#fff;border:none;width:36px;height:36px;border-radius:50%;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .1s}
+.nav-btn:hover{background:#2c3e50}
+.card-num{font-size:14px;font-weight:600;color:#333;width:90px;text-align:center}
+#card-slider{width:min(400px,90%)}
+#card-canvas{
+  width: min(640px, calc(100vh - 210px));
+  height: min(640px, calc(100vh - 210px));
+  border-radius:50%;
+  box-shadow:0 6px 28px rgba(0,0,0,.28);
+  background:#fff;
+}
+.canvas-wrap{position:relative;display:inline-block;line-height:0}
+.brand-badge{
+  position:absolute;top:14px;right:14px;
+  display:flex;flex-direction:column;align-items:flex-end;
+  background:rgba(255,255,255,0.93);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  border-radius:14px;padding:12px 16px 11px;
+  box-shadow:0 3px 20px rgba(0,0,0,.22);
+  pointer-events:auto;user-select:none;cursor:grab;
+  border:1px solid rgba(255,255,255,0.7);
+  touch-action:none;
+}
+.brand-bee{font-size:40px;line-height:1;margin-bottom:6px}
+.brand-name{font:700 13px/1.3 system-ui,sans-serif;color:#111;letter-spacing:-.2px;white-space:nowrap}
+.brand-city{font:400 11px/1.4 system-ui,sans-serif;color:#555;white-space:nowrap;margin-bottom:6px}
+.brand-sep{width:100%;border-top:1px solid #ddd;margin:4px 0 5px}
+.brand-lic{font:400 9.5px/1.6 system-ui,sans-serif;color:#999;white-space:nowrap}
+.actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.btn{padding:8px 16px;border:none;border-radius:5px;cursor:pointer;font-size:13px;font-weight:500;transition:filter .1s}
+.btn:hover{filter:brightness(1.12)}
+.btn-rand    {background:#8e44ad;color:#fff}
+.btn-rand-all{background:#6c3483;color:#fff}
+.btn-dl      {background:#27ae60;color:#fff}
+.btn-dl-all  {background:#1e8449;color:#fff}
+.btn-bg      {background:#e67e22;color:#fff}
+#dl-status{font-size:12px;color:#777;height:16px;text-align:center}
+
+/* ── MODAL ── */
+#modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:999;align-items:center;justify-content:center}
+#modal-overlay.show{display:flex}
+.modal-box{background:#fff;border-radius:10px;padding:28px 32px;max-width:480px;box-shadow:0 8px 40px rgba(0,0,0,.45);line-height:1.6}
+.modal-box h2{color:#c0392b;margin-bottom:12px;font-size:1.1rem}
+.modal-box p{font-size:14px;color:#333;margin-bottom:8px}
+.modal-box code{background:#f4f4f4;padding:2px 6px;border-radius:3px;font-size:13px}
+.modal-box button{margin-top:16px;background:#2980b9;color:#fff;border:none;padding:9px 22px;border-radius:6px;cursor:pointer;font-size:14px}
+.modal-box button:hover{background:#3498db}
+/* ── CARD BG COLOR PICKER ── */
+.bg-row{display:flex;align-items:center;gap:8px;font-size:13px;color:#555}
+.bg-row input[type=color]{width:36px;height:28px;border:none;border-radius:4px;cursor:pointer;padding:2px}
+
+/* ── IMPORT / EXPORT CHOOSER PANELS ── */
+.ic-overlay{display:none;position:fixed;inset:0;z-index:800;background:rgba(5,12,22,.7);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.ic-overlay.show{display:flex;align-items:flex-start;justify-content:center;padding-top:52px}
+.ic-panel{background:linear-gradient(160deg,#1e2d3d 0%,#152030 100%);border-radius:18px;padding:20px 22px 18px;box-shadow:0 24px 80px rgba(0,0,0,.75),0 0 0 1px rgba(255,255,255,.07);animation:ic-in .18s ease}
+@keyframes ic-in{from{transform:translateY(-16px);opacity:0}to{transform:none;opacity:1}}
+.ic-head{text-align:center;font-size:10px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:#4a6070;margin-bottom:16px}
+.ic-options{display:flex;gap:12px;justify-content:center}
+.ic-card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:14px 12px 12px;min-width:116px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;transition:background .15s,transform .15s,border-color .15s;user-select:none}
+.ic-card:hover{background:rgba(255,255,255,.12);transform:translateY(-4px);border-color:rgba(255,255,255,.28)}
+.ic-label{font-size:12px;font-weight:700;color:#ecf0f1;text-align:center;margin-top:2px}
+.ic-sub{font-size:10px;color:#4a6070;text-align:center;line-height:1.5}
+.ic-stack{position:relative;width:58px;height:58px;margin-bottom:2px;flex-shrink:0}
+.ic-photo{position:absolute;width:36px;height:36px;border-radius:4px;border:2px solid rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:17px;box-shadow:0 4px 12px rgba(0,0,0,.55)}
+.ic-photo:nth-child(1){transform:rotate(-9deg);top:3px;left:2px;background:#2d4a3e;z-index:1}
+.ic-photo:nth-child(2){transform:rotate(6deg);top:5px;left:14px;background:#1a3a5c;z-index:2}
+.ic-photo:nth-child(3){transform:rotate(-1deg);top:13px;left:8px;background:#2c3e50;z-index:3}
+.ic-grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;width:58px;height:58px;border-radius:5px;overflow:hidden;box-shadow:0 4px 14px rgba(0,0,0,.55);margin-bottom:2px;flex-shrink:0}
+.ic-gc{background:#1a2a3a}
+.ic-gc.on{background:linear-gradient(135deg,#2980b9,#27ae60)}
+.ic-gopts{width:100%;margin-top:7px;display:flex;flex-direction:column;gap:4px;border-top:1px solid rgba(255,255,255,.08);padding-top:7px;pointer-events:auto}
+.ic-gopts label{font-size:9.5px;color:#5d7a8a;display:flex;align-items:center;gap:4px;cursor:pointer;white-space:nowrap}
+.ic-gopts input[type=range]{flex:1;height:12px;accent-color:#9b59b6;min-width:0}
+#ic-trim-val{min-width:16px;color:#bdc3c7}
+/* gallery collapse */
+.gallery{transition:width .22s ease,min-width .22s ease}
+.gallery.collapsed{width:0!important;min-width:0!important;overflow:hidden;border-right:none}
+.gallery-toggle{position:absolute;left:0;top:50%;transform:translateY(-50%);z-index:10;background:#1a252f;color:#fff;border:none;border-radius:0 6px 6px 0;padding:10px 5px;cursor:pointer;font-size:13px;writing-mode:initial;transition:left .22s ease}
+.gallery-toggle.open{left:380px}
+main{position:relative}
+
+/* ── PLAY MODE ── */
+#play-overlay{display:none;position:fixed;inset:0;z-index:900;background:#07111c;flex-direction:column;align-items:center;justify-content:center;gap:16px}
+#play-overlay.show{display:flex}
+.play-header{display:flex;align-items:center;gap:14px;background:linear-gradient(135deg,#0f2236,#1a3a52);border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:12px 22px;box-shadow:0 8px 40px rgba(0,0,0,.5)}
+.play-title{font-size:17px;font-weight:800;letter-spacing:-.3px;background:linear-gradient(90deg,#1abc9c,#3498db);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;white-space:nowrap}
+.play-score{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:5px 14px;font-size:13px;color:#bdc3c7;display:flex;align-items:center;gap:6px}
+.play-cards{display:flex;gap:32px;align-items:center;position:relative}
+.play-card-wrap{display:flex;flex-direction:column;align-items:center;gap:10px}
+.play-label{font-size:12px;color:#4a6070;font-weight:700;letter-spacing:1px;text-transform:uppercase}
+#play-canvas-left,#play-canvas-right{border-radius:50%;box-shadow:0 6px 32px rgba(0,0,0,.55);cursor:pointer;transition:transform .15s}
+#play-canvas-left:hover,#play-canvas-right:hover{transform:scale(1.02)}
+.play-hint{font-size:12px;color:#2e4050;margin-top:4px}
+#play-result{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:50;pointer-events:none;text-align:center;line-height:1.1}
+#play-result.correct{font-size:96px;filter:drop-shadow(0 0 24px #2ecc71) drop-shadow(0 0 48px #2ecc71)}
+#play-result.wrong{font-size:72px;filter:drop-shadow(0 0 24px #e74c3c) drop-shadow(0 0 48px #e74c3c)}
+.play-close{background:rgba(231,76,60,.15);border:1px solid rgba(231,76,60,.3);border-radius:8px;color:#e74c3c;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:600}
+.play-close:hover{background:rgba(231,76,60,.3)}
+.play-lbl-toggle{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;color:#bdc3c7;padding:5px 12px;cursor:pointer;font-size:11px;display:flex;align-items:center;gap:5px;user-select:none}
+.play-lbl-toggle:hover{background:rgba(255,255,255,.14)}
+.play-lbl-toggle input{pointer-events:none}
+/* sym label input in gallery */
+.sym-lbl-input{font-size:10px;color:#aaa;border:none;border-bottom:1px solid #e0e0e0;background:transparent;width:100%;outline:none;padding:0 1px}
+.sym-lbl-input:focus{border-bottom-color:#2980b9;color:#333}
+/* ── DBL Scan Panel ── */
+#scan-overlay{display:none;position:fixed;inset:0;z-index:1500;background:rgba(7,17,28,.97);flex-direction:column;align-items:center}
+#scan-overlay.show{display:flex}
+#scan-header{background:#0f1e2d;border-bottom:2px solid #1a3a52;padding:12px 22px;width:100%;display:flex;align-items:center;gap:14px;flex-shrink:0}
+#scan-header h2{font-size:16px;font-weight:800;color:#ecf0f1;margin:0}
+#scan-header span{font-size:12px;color:#4a6070}
+#scan-close-btn{margin-left:auto;background:rgba(231,76,60,.15);color:#e74c3c;border:1px solid rgba(231,76,60,.3);border-radius:7px;padding:6px 16px;font-size:13px;font-weight:700;cursor:pointer}
+#scan-close-btn:hover{background:rgba(231,76,60,.35)}
+#scan-list{flex:1;overflow-y:auto;padding:24px;display:flex;flex-wrap:wrap;gap:16px;align-content:flex-start;width:100%}
+.scan-card{background:#0f1e2d;border:2px solid #1a3a52;border-radius:12px;padding:12px;width:160px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;transition:border-color .15s,background .15s}
+.scan-card:hover{border-color:#3498db;background:#142636}
+.scan-card canvas{border-radius:50%;border:2px solid #1a3a52;display:block}
+.scan-card .scan-name{font-size:11px;color:#bdc3c7;text-align:center;word-break:break-all;line-height:1.3}
+.scan-card .scan-err{font-size:10px;color:#e74c3c;text-align:center}
+#scan-status{font-size:13px;color:#4a6070;padding:8px 0}
+/* ── Label Editor ── */
+#lbl-overlay{display:none;position:fixed;inset:0;z-index:2000;background:#07111c;flex-direction:column}
+#lbl-overlay.show{display:flex}
+#lbl-toolbar{background:#0f1e2d;border-bottom:2px solid #1a3a52;padding:9px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;flex-shrink:0}
+#lbl-toolbar label{font-size:12px;color:#bdc3c7;display:flex;align-items:center;gap:6px;white-space:nowrap}
+#lbl-toolbar select{background:#1a2e42;color:#ecf0f1;border:1px solid #2c4a63;border-radius:5px;padding:4px 8px;font-size:12px;cursor:pointer}
+#lbl-toolbar select:focus{outline:none;border-color:#3498db}
+#lbl-main-area{flex:1;overflow:auto;padding:16px 24px;position:relative}
+#lbl-content{position:relative}
+.lbl-sym-cell{position:absolute;display:flex;align-items:center;justify-content:center;border-radius:8px;border:2px solid transparent;background:rgba(255,255,255,.03);cursor:pointer;transition:border-color .12s,background .12s;box-sizing:border-box}
+.lbl-sym-cell:hover{background:rgba(255,255,255,.09);border-color:#2c4a63}
+.lbl-sym-cell.lbl-active{border-color:#3498db;background:rgba(52,152,219,.18);box-shadow:0 0 0 3px rgba(52,152,219,.25)}
+.lbl-txt-cell{position:absolute;display:flex;align-items:center;box-sizing:border-box}
+.lbl-txt-cell textarea{width:100%;background:#0d1b27;color:#ecf0f1;border:1px solid #1e3448;border-radius:6px;padding:5px 9px;resize:none;outline:none;transition:border-color .15s,background .15s;line-height:1.45;box-sizing:border-box;font-family:sans-serif;font-size:14px}
+.lbl-txt-cell textarea::placeholder{color:#2c4a63}
+.lbl-txt-cell textarea:focus,.lbl-txt-cell.lbl-txt-active textarea{border-color:#3498db;background:#111f2e}
+#lbl-close-btn{margin-left:auto;background:rgba(231,76,60,.15);color:#e74c3c;border:1px solid rgba(231,76,60,.3);border-radius:7px;padding:6px 16px;font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0}
+#lbl-close-btn:hover{background:rgba(231,76,60,.35)}
+</style>
+</head>
+<body>
+
+<!-- SharePoint / HTTP warning modal -->
+<div id="modal-overlay">
+  <div class="modal-box">
+    <h2>&#9888;&#65039; Datei kann nicht direkt aus SharePoint / OneDrive ausgeführt werden</h2>
+    <p>HTML-Dateien über SharePoint oder OneDrive können aus Sicherheitsgründen keine lokalen Funktionen ausführen:</p>
+    <ul style="font-size:14px;color:#333;margin:8px 0 8px 20px">
+      <li>🚫 <b>Bilder hochladen</b> funktioniert nicht</li>
+      <li>🚫 <b>Karten speichern</b> funktioniert nicht</li>
+      <li>🚫 <b>Settings laden/speichern</b> funktioniert nicht</li>
+    </ul>
+    <p><b>Bitte so vorgehen:</b></p>
+    <p>1. Datei in SharePoint/OneDrive öffnen &rarr; <code>Herunterladen</code></p>
+    <p>2. Heruntergeladene <code>.html</code>-Datei lokal im Browser öffnen (Doppelklick)</p>
+    <button onclick="document.getElementById('modal-overlay').classList.remove('show')">Verstanden</button>
+  </div>
+</div>
+
+<!-- ── IMPORT CHOOSER ── -->
+<div id="ic-overlay" class="ic-overlay" onclick="if(event.target===this)closeIC()">
+  <div class="ic-panel">
+    <div class="ic-head">📥 &nbsp;Import — Was möchtest du laden?</div>
+    <div class="ic-options">
+      <div class="ic-card" onclick="triggerImport('files')">
+        <div class="ic-stack">
+          <div class="ic-photo">🌿</div>
+          <div class="ic-photo">🐠</div>
+          <div class="ic-photo">🖼️</div>
+        </div>
+        <div class="ic-label">Bilder</div>
+        <div class="ic-sub">PNG · JPG<br>einzeln</div>
+      </div>
+      <div class="ic-card" onclick="triggerImport('grid')">
+        <div class="ic-grid4">
+          <div class="ic-gc on"></div><div class="ic-gc on"></div><div class="ic-gc on"></div><div class="ic-gc on"></div>
+          <div class="ic-gc on"></div><div class="ic-gc"></div><div class="ic-gc on"></div><div class="ic-gc"></div>
+          <div class="ic-gc on"></div><div class="ic-gc on"></div><div class="ic-gc"></div><div class="ic-gc on"></div>
+          <div class="ic-gc"></div><div class="ic-gc on"></div><div class="ic-gc on"></div><div class="ic-gc on"></div>
+        </div>
+        <div class="ic-label">Symbol-Grid</div>
+        <div class="ic-sub">4×4 Bild-<br>Datei(en)</div>
+        <div class="ic-gopts" onclick="event.stopPropagation()">
+          <label>Rand:&nbsp;<input type="range" id="grid-trim" min="0" max="30" value="6"
+            oninput="document.getElementById('ic-trim-val').textContent=this.value">
+            <span id="ic-trim-val">6</span>px</label>
+          <label><input type="checkbox" id="grid-autoscale" checked>&nbsp;Auto-Skalierung</label>
+        </div>
+      </div>
+      <div class="ic-card" onclick="triggerImport('settings')">
+        <div style="font-size:44px;margin-bottom:4px">📋</div>
+        <div class="ic-label">Settings</div>
+        <div class="ic-sub">.json Datei</div>
+      </div>
+      <div class="ic-card" onclick="triggerImport('zip')">
+        <div style="font-size:44px;margin-bottom:4px">📦</div>
+        <div class="ic-label">.dbl / ZIP</div>
+        <div class="ic-sub">Bilder · Grids<br>Settings</div>
+      </div>
+      <div class="ic-card" onclick="closeIC();scanDblFolder()">
+        <div style="font-size:44px;margin-bottom:4px">🔍</div>
+        <div class="ic-label">Ordner Scan</div>
+        <div class="ic-sub">.dbl Dateien<br>im Ordner</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── EXPORT CHOOSER ── -->
+<div id="ec-overlay" class="ic-overlay" onclick="if(event.target===this)closeEC()">
+  <div class="ic-panel">
+    <div class="ic-head">📤 &nbsp;Export — Was möchtest du speichern?</div>
+    <div class="ic-options">
+      <div class="ic-card" onclick="triggerExport('zip')">
+        <div style="font-size:44px;margin-bottom:4px">📦</div>
+        <div class="ic-label">.dbl</div>
+        <div class="ic-sub">Bilder +<br>Settings</div>
+      </div>
+      <div class="ic-card" onclick="triggerExport('grid')">
+        <div class="ic-grid4" style="pointer-events:none">
+          <div class="ic-gc on"></div><div class="ic-gc on"></div><div class="ic-gc on"></div><div class="ic-gc on"></div>
+          <div class="ic-gc on"></div><div class="ic-gc on"></div><div class="ic-gc on"></div><div class="ic-gc on"></div>
+          <div class="ic-gc on"></div><div class="ic-gc on"></div><div class="ic-gc on"></div><div class="ic-gc on"></div>
+          <div class="ic-gc on"></div><div class="ic-gc on"></div><div class="ic-gc on"></div><div class="ic-gc on"></div>
+        </div>
+        <div class="ic-label">Symbol-Grids</div>
+        <div class="ic-sub">4 × 4×4 PNG<br>für KI / Edit</div>
+        <div class="ic-gopts" onclick="event.stopPropagation()" style="margin-top:7px">
+          <label><input type="checkbox" id="grid-scale">&nbsp;Skalierung verwenden</label>
+        </div>
+      </div>
+      <div class="ic-card" onclick="triggerExport('print')">
+        <div style="font-size:40px;margin-bottom:4px">🖨️</div>
+        <div class="ic-label">Print Studio</div>
+        <div class="ic-sub">Foto-PNG<br>für Druck</div>
+        <div class="ic-gopts" onclick="event.stopPropagation()" style="margin-top:7px">
+          <label style="display:flex;align-items:center;gap:4px"><input type="radio" name="print-mode" value="pair" checked> Paar (akt.)</label>
+          <label style="display:flex;align-items:center;gap:4px"><input type="radio" name="print-mode" value="all"> Alle Paare</label>
+          <label style="display:flex;align-items:center;gap:4px"><input type="radio" name="print-mode" value="card"> Nur Karte</label>
+        </div>
+      </div>
+      <div class="ic-card" onclick="triggerExport('settings')">
+        <div style="font-size:44px;margin-bottom:4px">📋</div>
+        <div class="ic-label">Settings</div>
+        <div class="ic-sub">.json Datei</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── PLAY MODE OVERLAY ── -->
+<div id="play-overlay">
+  <div class="play-header">
+    <span class="play-title">🎴 Spot-It Play</span>
+    <div class="play-score">✅ <span id="play-correct">0</span> &nbsp; ❌ <span id="play-wrong">0</span></div>
+    <label class="play-lbl-toggle">
+      <input type="checkbox" id="play-label-mode"> 🔤 Beschriftungs-Modus
+    </label>
+    <button class="play-close" onclick="closePlay()">✕ Beenden</button>
+  </div>
+  <div class="play-cards">
+    <div class="play-card-wrap">
+      <div class="play-label">Symbole</div>
+      <canvas id="play-canvas-left" width="700" height="700"></canvas>
+      <div class="play-hint">Tippe das gemeinsame Symbol</div>
+    </div>
+    <div style="font-size:36px;color:#2e4050">⚡</div>
+    <div class="play-card-wrap">
+      <div class="play-label" id="play-right-label">Symbole</div>
+      <canvas id="play-canvas-right" width="700" height="700"></canvas>
+      <div id="play-labels-card"></div>
+      <div class="play-hint" id="play-right-hint">Klicke hier auf das gleiche</div>
+    </div>
+    <div id="play-result"></div>
+  </div>
+</div>
+
+<!-- ── Label Editor Overlay ── -->
+<div id="lbl-overlay">
+  <div id="lbl-toolbar">
+    <span style="font-size:15px;font-weight:800;color:#ecf0f1;white-space:nowrap">🏷 Beschriftungs-Editor</span>
+    <label>Schriftart:
+      <select id="lbl-font-sel" onchange="_lblUpdateFont()">
+        <option value="sans-serif">Sans-Serif</option>
+        <option value="serif">Serif</option>
+        <option value="monospace">Monospace</option>
+        <option value="Arial">Arial</option>
+        <option value="Georgia">Georgia</option>
+        <option value="'Trebuchet MS'">Trebuchet MS</option>
+        <option value="Impact">Impact</option>
+        <option value="cursive">Cursive</option>
+      </select>
+    </label>
+    <label>Größe:
+      <select id="lbl-size-sel" onchange="_lblUpdateFont()">
+        <option value="10">10 px</option><option value="12">12 px</option>
+        <option value="14" selected>14 px</option><option value="16">16 px</option>
+        <option value="18">18 px</option><option value="20">20 px</option>
+        <option value="24">24 px</option><option value="28">28 px</option>
+        <option value="32">32 px</option>
+      </select>
+    </label>
+    <span style="font-size:11px;color:#4a6070;white-space:nowrap">Enter = nächstes Symbol &nbsp;·&nbsp; Shift+Enter = Zeilenumbruch</span>
+    <button id="lbl-close-btn" onclick="closeLblEditor()">✕ Schließen</button>
+  </div>
+  <div id="lbl-main-area">
+    <div id="lbl-content"></div>
+  </div>
+</div>
+
+<header>
+  <div class="hrow">
+    <h1>&#x1F3B4; Spot-It Karten Generator</h1>
+    <span style="font-size:10px;font-weight:700;color:#fff;background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.22);border-radius:5px;padding:2px 7px;letter-spacing:.4px;white-space:nowrap;flex-shrink:0">v 1.10</span>
+    <div class="hrow-sep"></div>
+    <button class="hbtn" style="background:linear-gradient(135deg,#16a085,#1abc9c);font-size:13px;padding:7px 16px" onclick="openIC()">&#x1F4E5; Import</button>
+    <button class="hbtn" style="background:linear-gradient(135deg,#e67e22,#f39c12);font-size:13px;padding:7px 16px" onclick="openEC()">&#x1F4E4; Export</button>
+    <!-- hidden file inputs – IDs used by JS -->
+    <input type="file" id="finput" accept="image/*" multiple style="display:none">
+    <input type="file" id="zinput" accept=".zip,.dbl" style="display:none">
+    <input type="file" id="ginput" accept="image/*" multiple style="display:none">
+    <input type="file" id="settings-input" accept=".json" style="display:none">
+    <div class="hrow-sep"></div>
+    <label class="hcheck" style="color:#ecf0f1"><input type="checkbox" id="bg-remove" checked> BG entfernen</label>
+    <label class="hcheck">Tol.:
+      <input type="range" id="bg-tol" min="5" max="90" value="40" step="5" style="width:55px">
+      <span id="tol-val">40</span>
+    </label>
+    <div class="hrow-sep"></div>
+    <span id="progress">0 / 57 Bilder geladen</span>
+  </div>
+</header>
+
+<main>
+  <!-- gallery collapse toggle -->
+  <button class="gallery-toggle" id="gallery-toggle" onclick="toggleGallery()" title="Galerie ein-/ausblenden">▶</button>
+  <!-- ── LEFT: Symbol gallery ── -->
+  <div class="gallery collapsed" id="gallery-panel">
+    <div class="gallery-header">
+      Symbol · Größe (S) &amp; Drehung (R)
+      <div class="gl-scale-row">
+        <span>Alle:</span>
+        <input type="range" id="global-scale" min="20" max="220" value="100" step="5"
+               oninput="setGlobalScale(this.value)">
+        <span id="gs-val">1.0×</span>
+      </div>
+      <div class="gl-scale-row">
+        <span>Ring-R:</span>
+        <input type="range" id="global-ring-r" min="80" max="300" value="195" step="5"
+               oninput="setGlobalRingR(this.value)">
+        <span id="gr-val">195</span>
+      </div>
+    </div>
+    <div id="gallery-list"></div>
+  </div>
+
+  <!-- ── RIGHT: Card preview ── -->
+  <div class="card-area">
+    <div class="card-nav">
+      <button class="nav-btn" onclick="navigate(-1)">◀</button>
+      <input type="number" id="card-direct" min="1" max="55" value="1"
+             title="Kartennummer direkt eingeben"
+             style="width:52px;text-align:center;border:1px solid #ccc;border-radius:4px;
+                    padding:3px 4px;font-size:13px;font-weight:600;color:#333">
+      <span id="card-num" style="font-size:13px;font-weight:600;color:#555">/ 55</span>
+      <button class="nav-btn" onclick="navigate(1)">▶</button>
+    </div>
+
+    <input type="range" id="card-slider" min="0" max="54" value="0"
+           oninput="gotoCard(+this.value)">
+
+    <div class="canvas-wrap">
+      <canvas id="card-canvas" width="700" height="700"></canvas>
+      <div class="brand-badge" id="brand-badge">
+        <span class="brand-bee">🐝</span>
+        <span class="brand-name">Holger Specht</span>
+        <span class="brand-city">Bad Abbach</span>
+        <div class="brand-sep"></div>
+        <span class="brand-lic">Private License</span>
+        <span class="brand-lic">
+      </div>
+    </div>
+
+    <div class="bg-row">
+      <label for="bg-color">Karten-Hintergrund:</label>
+      <input type="color" id="bg-color" value="#ffffff" oninput="renderCard()">
+      <label for="border-color">Rand:</label>
+      <input type="color" id="border-color" value="#888888" oninput="renderCard()">
+      <span style="font-size:12px;color:#666;margin-left:10px">Ring±:</span>
+      <input type="range" id="card-ring-r" min="-100" max="100" value="0" step="5"
+             title="Ring-Radius dieser Karte feinjustieren"
+             style="width:90px;accent-color:#2980b9"
+             oninput="setCardRingR(+this.value)">
+      <span id="crr-val" style="font-size:11px;color:#555;min-width:28px">0</span>
+      <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:#555;margin-left:10px;cursor:pointer">
+        <input type="checkbox" id="show-ring" onchange="renderCard()"> Ring einzeichnen
+      </label>
+    </div>
+
+    <div class="actions" style="justify-content:space-between">
+      <div style="display:flex;gap:8px;align-items:center">
+            <button class="btn btn-rand"     onclick="randomizeCurrent()">&#x1F500; Würfeln (diese Karte)</button>
+        <button class="btn btn-rand-all" onclick="randomizeAll()">&#x1F500; Alle neu würfeln</button>
+        <button class="btn" style="background:#16a085;color:#fff" onclick="openPlay()">▶ Play</button>
+        <button class="btn" style="background:#8e44ad;color:#fff" onclick="openLblEditor()">🏷 Labels</button>
+      </div>
+    </div>
+    <div id="dl-status"></div>
+    <details style="font-size:11px;color:#888;text-align:center;max-width:600px;cursor:pointer;margin-top:2px">
+      <summary style="color:#aaa;user-select:none">&#9000; Tastaturkürzel</summary>
+      <div style="margin-top:5px;line-height:2;color:#777">
+        <b>Klick</b> = Symbol wählen &nbsp;·&nbsp;
+        <b>Drag</b> = verschieben &nbsp;·&nbsp;
+        <b>Doppelklick</b> = Position reset &nbsp;·&nbsp;
+        <b>◄►▲▼</b> = bewegen &nbsp;·&nbsp;
+        <b>Shift+◄►▲▼</b> = fein &nbsp;·&nbsp;
+        <b>Ctrl+◄►</b> = drehen &nbsp;·&nbsp;
+        <b>Leertaste</b> = größer &nbsp;·&nbsp;
+        <b>Shift+Leertaste</b> = kleiner &nbsp;·&nbsp;
+        <b>Del</b> = Pos-Reset &nbsp;·&nbsp;
+        <b>Esc</b> = abwählen &nbsp;·&nbsp;
+        <b>Ctrl+Z/Y</b> = Undo/Redo
+      </div>
+    </details>
+  </div>
+</main>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// SPOT_IT MATH  –  Projective Plane of Order 7
+// 57 symbols, 57 lines; we use 55 cards, 8 symbols each.
+// Any two cards share exactly 1 common symbol.
+// ═══════════════════════════════════════════════════════════════
+function buildSpotIt() {
+  const p = 7, cards = [];
+
+  // Type 1: p² cards, slope m ∈ {0..p-1}, intercept b ∈ {0..p-1}
+  for (let m = 0; m < p; m++)
+    for (let b = 0; b < p; b++) {
+      const c = [];
+      for (let x = 0; x < p; x++) c.push(x * p + (m * x + b) % p);
+      c.push(p * p + m);   // infinity point for slope m
+      cards.push(c);
+    }
+
+  // Type 2: p vertical lines  (k = 0..p-1)
+  for (let k = 0; k < p; k++) {
+    const c = [];
+    for (let y = 0; y < p; y++) c.push(k * p + y);
+    c.push(p * p + p);     // double-infinity point (index 56)
+    cards.push(c);
+  }
+
+  // Type 3: line at infinity
+  const inf = [];
+  for (let k = 0; k < p; k++) inf.push(p * p + k);
+  inf.push(p * p + p);
+  cards.push(inf);
+
+  return cards;  // 57 cards, symbol indices 0-56
+}
+
+const SPOT_IT   = buildSpotIt().slice(0, 55);   // use 55 cards
+const N_SYM    = 57;
+const N_CARD   = 55;
+
+// ═══════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════
+const images   = new Array(N_SYM).fill(null);   // HTMLImageElement | null
+const symScale = new Float32Array(N_SYM).fill(1.0);   // 0.30 – 2.60
+const symRot   = new Float32Array(N_SYM).fill(0);     // degrees, -180 .. +180
+const symLabel = new Array(N_SYM).fill('');           // optional text label per symbol
+let globalScale  = 1.0;   // multiplicative factor for ALL symbols
+let loadedCount  = 0;
+let currentCard  = 0;
+
+function setGlobalScale(v) {
+  globalScale = v / 100;
+  document.getElementById('gs-val').textContent = globalScale.toFixed(1) + '×';
+  renderCard();
+}
+function setGlobalRingR(v) {
+  ringR = +v;
+  document.getElementById('gr-val').textContent = v;
+  renderCard();
+}
+function setCardRingR(v) {
+  layouts[currentCard].ringROffset = v;
+  document.getElementById('crr-val').textContent = (v >= 0 ? '+' : '') + v;
+  renderCard();
+}
+document.getElementById('bg-tol').addEventListener('input', e => {
+  document.getElementById('tol-val').textContent = e.target.value;
+});
+
+// Per-card random layout  (regenerated with "Würfeln")
+function mkLayout() {
+  const order = [0,1,2,3,4,5,6,7];
+  for (let i = 7; i > 0; i--) {           // Fisher-Yates
+    const j = Math.floor(Math.random() * (i + 1));
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  return {
+    startAngle : Math.random() * Math.PI * 2,
+    baseRot    : Array.from({length:8}, () => Math.random() * Math.PI * 2),
+    jitter     : Array.from({length:8}, () =>
+                   [(Math.random()-.5)*30, (Math.random()-.5)*30]),
+    customPos  : new Array(8).fill(null),
+    rotAdj     : new Array(8).fill(0),   // per-card rotation adjustment (degrees)
+    ringROffset: 0,
+    order
+  };
+}
+const layouts = Array.from({length: N_CARD}, mkLayout);
+
+// ═══════════════════════════════════════════════════════════════
+// POSITION HELPERS
+// ═══════════════════════════════════════════════════════════════
+function computePositions(card, layout) {
+  // Equal angular spacing – scale changes only affect symbol size, never other positions
+  const step = (Math.PI * 2) / 7;
+  return Array.from({length: 8}, (_, pos) => {
+    const cp = layout.customPos && layout.customPos[pos];
+    if (cp) return [cp[0], cp[1]];
+    if (pos === 7) return [cx + (layout.jitter?.[pos]?.[0] ?? 0),
+                           cy + (layout.jitter?.[pos]?.[1] ?? 0)];
+    const a = layout.startAngle + pos * step;
+    return [cx + (ringR + (layout.ringROffset ?? 0)) * Math.cos(a) + (layout.jitter?.[pos]?.[0] ?? 0),
+            cy + (ringR + (layout.ringROffset ?? 0)) * Math.sin(a) + (layout.jitter?.[pos]?.[1] ?? 0)];
+  });
+}
+
+function canvasCoords(e) {
+  const r = canvas.getBoundingClientRect();
+  return { x: (e.clientX - r.left) * CW / r.width,
+           y: (e.clientY - r.top)  * CH / r.height };
+}
+
+function hitTestCard(mx, my) {
+  const card      = SPOT_IT[currentCard];
+  const layout    = layouts[currentCard];
+  const positions = computePositions(card, layout);
+  let best = -1, bestDist = Infinity;
+  for (let pos = 0; pos < 8; pos++) {
+    const symIdx   = card[layout.order[pos]];
+    const radius   = (BASE_SZ * globalScale * symScale[symIdx]) / 2;
+    const [px, py] = positions[pos];
+    const d = Math.hypot(mx - px, my - py);
+    if (d < radius && d < bestDist) { bestDist = d; best = pos; }
+  }
+  return best;
+}
+
+function syncScaleSlider(i) {
+  const sl = document.querySelectorAll('.ssl')[i];
+  if (sl) sl.value = Math.round(symScale[i] * 100);
+  const lbl = document.getElementById(`sv${i}`);
+  if (lbl) lbl.textContent = symScale[i].toFixed(1) + '×';
+}
+function syncRotSlider(i) {
+  const sl = document.querySelectorAll('.rsl')[i];
+  if (sl) sl.value = symRot[i];
+  const lbl = document.getElementById(`rv${i}`);
+  if (lbl) lbl.textContent = symRot[i] + '°';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PLAY MODE
+// ═══════════════════════════════════════════════════════════════
+let playActive    = false;
+let playCardLeft  = 0;   // card index shown on left
+let playCardRight = 1;   // card index shown on right
+let playCorrect   = 0;
+let playWrong     = 0;
+// The shared symbol between left and right card
+let playMatchSym  = -1;
+
+const playCanvasL = document.getElementById('play-canvas-left');
+const playCanvasR = document.getElementById('play-canvas-right');
+const playCtxL    = playCanvasL.getContext('2d');
+const playCtxR    = playCanvasR.getContext('2d');
+
+function _playRenderCard(ctx, cardIdx, labelMode) {
+  ctx.clearRect(0,0,700,700);
+  const bgColor     = document.getElementById('bg-color').value;
+  const borderColor = document.getElementById('border-color').value;
+  const card   = SPOT_IT[cardIdx];
+  const layout = layouts[cardIdx];
+  ctx.save();
+  ctx.beginPath(); ctx.arc(350,350,320,0,Math.PI*2);
+  ctx.fillStyle = bgColor; ctx.fill(); ctx.clip();
+  const positions = computePositions(card, layout);
+  for (let pos=0;pos<8;pos++) {
+    const symIdx = card[layout.order[pos]];
+    const img    = images[symIdx];
+    const sz     = BASE_SZ * globalScale * symScale[symIdx];
+    const rot    = layout.baseRot[pos] + (symRot[symIdx] + (layout.rotAdj?.[pos]??0)) * Math.PI/180;
+    const [px,py]= positions[pos];
+    ctx.save(); ctx.translate(px,py);
+    if (labelMode) {
+      // Draw label bubble at same position (no rotation for readability)
+      const lbl   = symLabel[symIdx] || String(symIdx+1);
+      const fsize = Math.max(11, Math.min(28, Math.round(sz * 0.28)));
+      ctx.font = `bold ${fsize}px system-ui,sans-serif`;
+      const tw = ctx.measureText(lbl).width;
+      const bw = tw + 18, bh = fsize + 14;
+      const hue = (symIdx*47)%360;
+      ctx.beginPath();
+      ctx.roundRect(-bw/2,-bh/2,bw,bh, bh/2);
+      ctx.fillStyle = `hsl(${hue},55%,88%)`;
+      ctx.fill();
+      ctx.strokeStyle = `hsl(${hue},55%,60%)`;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle = `hsl(${hue},50%,22%)`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(lbl, 0, 1);
+    } else {
+      ctx.rotate(rot);
+      if (img) { ctx.drawImage(img,-sz/2,-sz/2,sz,sz); }
+      else {
+        const hue=(symIdx*47)%360;
+        ctx.beginPath();ctx.arc(0,0,sz/2,0,Math.PI*2);
+        ctx.fillStyle=`hsl(${hue},40%,88%)`;ctx.fill();
+        ctx.strokeStyle=`hsl(${hue},40%,60%)`;ctx.lineWidth=2;ctx.stroke();
+        ctx.fillStyle=`hsl(${hue},40%,35%)`;
+        ctx.font=`bold ${Math.round(sz*.33)}px sans-serif`;
+        ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText(symIdx+1,0,0);
+      }
+    }
+    ctx.restore();
+  }
+  ctx.restore();
+  ctx.beginPath(); ctx.arc(350,350,320,0,Math.PI*2);
+  ctx.strokeStyle=borderColor; ctx.lineWidth=3; ctx.stroke();
+}
+
+function _playHitTest(cardIdx, mx, my) {
+  const card    = SPOT_IT[cardIdx];
+  const layout  = layouts[cardIdx];
+  const positions = computePositions(card, layout);
+  let best=-1, bestD=Infinity;
+  for (let pos=0;pos<8;pos++) {
+    const symIdx = card[layout.order[pos]];
+    const r = (BASE_SZ*globalScale*symScale[symIdx])/2;
+    const [px,py] = positions[pos];
+    const d = Math.hypot(mx-px, my-py);
+    if (d<r && d<bestD) { bestD=d; best=symIdx; }
+  }
+  return best;  // returns symIdx, not pos
+}
+
+function _playCanvasCoords(canvas, e) {
+  const r = canvas.getBoundingClientRect();
+  return { x:(e.clientX-r.left)*700/r.width, y:(e.clientY-r.top)*700/r.height };
+}
+
+function _playNextRound() {
+  // pick two random different cards
+  let a = Math.floor(Math.random()*N_CARD);
+  let b;
+  do { b = Math.floor(Math.random()*N_CARD); } while (b===a);
+  playCardLeft  = a;
+  playCardRight = b;
+  // find shared symbol
+  const setA = new Set(SPOT_IT[a]);
+  playMatchSym = SPOT_IT[b].find(s => setA.has(s));
+  _playRenderBoth();
+}
+
+function _playRenderBoth() {
+  _playRenderCard(playCtxL, playCardLeft, false);
+  const labelMode = document.getElementById('play-label-mode').checked;
+  if (labelMode) {
+    _playRenderCard(playCtxR, playCardRight, true);   // same layout, text instead of image
+    playCanvasR.classList.remove('label-mode');
+    document.getElementById('play-labels-card').classList.remove('show');
+    document.getElementById('play-labels-card').innerHTML = '';
+    document.getElementById('play-right-label').textContent = 'Beschriftungen';
+    document.getElementById('play-right-hint').textContent = 'Klicke das passende Wort';
+  } else {
+    _playRenderCard(playCtxR, playCardRight, false);
+    playCanvasR.classList.remove('label-mode');
+    document.getElementById('play-labels-card').classList.remove('show');
+    document.getElementById('play-labels-card').innerHTML = '';
+    document.getElementById('play-right-label').textContent = 'Symbole';
+    document.getElementById('play-right-hint').textContent = 'Klicke hier auf das gleiche';
+  }
+}
+
+function _playDrawMatchHalo(ctx, cardIdx, color) {
+  const card = SPOT_IT[cardIdx];
+  const layout = layouts[cardIdx];
+  const positions = computePositions(card, layout);
+  for (let pos = 0; pos < 8; pos++) {
+    if (card[layout.order[pos]] === playMatchSym) {
+      const [px, py] = positions[pos];
+      const sz = BASE_SZ * globalScale * symScale[playMatchSym];
+      ctx.save();
+      ctx.shadowColor = color; ctx.shadowBlur = 40;
+      for (let r = 0; r < 3; r++) {
+        ctx.beginPath();
+        ctx.arc(px, py, sz/2 + 10 + r*10, 0, Math.PI*2);
+        ctx.strokeStyle = color;
+        ctx.globalAlpha = 0.9 - r*0.25;
+        ctx.lineWidth = 6 - r*1.5;
+        ctx.stroke();
+      }
+      ctx.restore();
+      break;
+    }
+  }
+}
+
+function _playMatchSymCanvas() {
+  const c = document.createElement('canvas');
+  c.width = 140; c.height = 140;
+  c.style.cssText = 'width:84px;height:84px;border-radius:50%;display:block;margin:6px auto 0;border:3px solid rgba(231,76,60,.8)';
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#0d1b27';
+  ctx.beginPath(); ctx.arc(70,70,68,0,Math.PI*2); ctx.fill();
+  const img = images[playMatchSym];
+  const sz = Math.min(100, 100 * symScale[playMatchSym] * globalScale);
+  ctx.save(); ctx.translate(70,70); ctx.rotate(symRot[playMatchSym]*Math.PI/180);
+  if (img) {
+    ctx.drawImage(img,-sz/2,-sz/2,sz,sz);
+  } else {
+    const hue=(playMatchSym*47)%360;
+    ctx.beginPath();ctx.arc(0,0,52,0,Math.PI*2);
+    ctx.fillStyle=`hsl(${hue},40%,88%)`;ctx.fill();
+    ctx.fillStyle=`hsl(${hue},40%,35%)`;
+    ctx.font='bold 34px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(playMatchSym+1,0,0);
+  }
+  ctx.restore();
+  return c;
+}
+
+function _playCheckSym(clickedSym) {
+  const res = document.getElementById('play-result');
+  res.className = ''; res.innerHTML = '';
+  if (clickedSym === playMatchSym) {
+    playCorrect++;
+    document.getElementById('play-correct').textContent = playCorrect;
+    res.textContent = '✅';
+    res.className = 'correct';
+    _playDrawMatchHalo(playCtxL, playCardLeft, '#2ecc71');
+    _playDrawMatchHalo(playCtxR, playCardRight, '#2ecc71');
+  } else {
+    playWrong++;
+    document.getElementById('play-wrong').textContent = playWrong;
+    res.appendChild(document.createTextNode('❌'));
+    res.appendChild(_playMatchSymCanvas());
+    res.className = 'wrong';
+    _playDrawMatchHalo(playCtxL, playCardLeft, '#e74c3c');
+    _playDrawMatchHalo(playCtxR, playCardRight, '#e74c3c');
+  }
+  setTimeout(() => {
+    res.innerHTML = ''; res.className = '';
+    const wrapL = playCanvasL.parentElement;
+    const wrapR = playCanvasR.parentElement;
+    const bolt  = wrapL.nextElementSibling;  // ⚡ separator between the two wraps
+    const delta = Math.round(wrapR.getBoundingClientRect().left - wrapL.getBoundingClientRect().left);
+
+    // ── Phase 1: right exits right, left slides into right slot ──────
+    wrapR.style.transition = 'transform .32s cubic-bezier(.4,0,.2,1), opacity .20s';
+    wrapL.style.transition = 'transform .32s cubic-bezier(.4,0,.2,1)';
+    if (bolt) { bolt.style.transition = 'opacity .22s'; bolt.style.opacity = '0'; }
+    wrapR.style.transform = 'translateX(220px)'; wrapR.style.opacity = '0';
+    wrapL.style.transform  = `translateX(${delta}px)`;
+
+    setTimeout(() => {
+      // ── advance game state: old left becomes new right, pick fresh left ──
+      playCardRight = playCardLeft;
+      let newL;
+      do { newL = Math.floor(Math.random()*N_CARD); } while (newL === playCardRight);
+      playCardLeft = newL;
+      const setL = new Set(SPOT_IT[playCardLeft]);
+      playMatchSym = SPOT_IT[playCardRight].find(s => setL.has(s));
+      _playRenderBoth();   // renders both canvases + updates DOM labels
+
+      // ── show right instantly at natural position (holds old-left content) ──
+      wrapR.style.transition = 'none';
+      wrapR.style.transform = 'none'; wrapR.style.opacity = '1';
+
+      // ── snap left off-screen to the left ──
+      wrapL.style.transition = 'none';
+      wrapL.style.transform = `translateX(-${delta}px)`; wrapL.style.opacity = '0';
+
+      // ── Phase 3: left slides in from left, bolt fades back ──
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        wrapL.style.transition = 'transform .32s cubic-bezier(.4,0,.2,1), opacity .25s';
+        wrapL.style.transform = 'none'; wrapL.style.opacity = '1';
+        if (bolt) { bolt.style.transition = 'opacity .25s .12s'; bolt.style.opacity = '1'; }
+      }));
+    }, 350);
+  }, 350);
+}
+
+playCanvasL.addEventListener('click', e => {
+  if (!playActive) return;
+  const {x,y} = _playCanvasCoords(playCanvasL, e);
+  const sym = _playHitTest(playCardLeft, x, y);
+  if (sym >= 0) _playCheckSym(sym);
+});
+playCanvasR.addEventListener('click', e => {
+  if (!playActive) return;
+  const {x,y} = _playCanvasCoords(playCanvasR, e);
+  const sym = _playHitTest(playCardRight, x, y);
+  if (sym >= 0) _playCheckSym(sym);
+});
+document.getElementById('play-label-mode').addEventListener('change', () => {
+  if (playActive) _playRenderBoth();
+});
+
+function openPlay() {
+  playActive = true;
+  playCorrect = 0; playWrong = 0;
+  document.getElementById('play-correct').textContent = '0';
+  document.getElementById('play-wrong').textContent = '0';
+  document.getElementById('play-result').textContent = '';
+  document.getElementById('play-overlay').classList.add('show');
+  _playNextRound();
+}
+function closePlay() {
+  playActive = false;
+  document.getElementById('play-overlay').classList.remove('show');
+}
+
+// ══════════════════════════════════════════════════════════════
+// LABEL EDITOR
+// ══════════════════════════════════════════════════════════════
+const LBL_PER_COL = 10;   // symbols per column
+const LBL_ROW_H   = 66;   // px height per row
+const LBL_COL_W   = 70;   // px width per column
+const LBL_TEXT_W  = 320;  // px width of text panel
+const LBL_GAP     = 28;   // gap between grid and text panel
+
+let lblCurIdx = 0;
+
+function openLblEditor() {
+  document.getElementById('lbl-overlay').classList.add('show');
+  lblCurIdx = 0;
+  _lblRender();
+}
+
+function closeLblEditor() {
+  // persist textarea values
+  const curTa = document.getElementById(`lbl-ta-${lblCurIdx}`);
+  if (curTa) symLabel[lblCurIdx] = curTa.value;
+  document.getElementById('lbl-overlay').classList.remove('show');
+}
+
+function _lblRender() {
+  const content  = document.getElementById('lbl-content');
+  content.innerHTML = '';
+
+  const numCols   = Math.ceil(N_SYM / LBL_PER_COL);    // 6
+  const gridW     = numCols * LBL_COL_W;
+  const totalH    = LBL_PER_COL * LBL_ROW_H;
+  const activeCol = Math.floor(lblCurIdx / LBL_PER_COL);
+  const font      = document.getElementById('lbl-font-sel')?.value || 'sans-serif';
+  const size      = +(document.getElementById('lbl-size-sel')?.value || 14);
+
+  content.style.cssText = `position:relative;width:${gridW + LBL_GAP + LBL_TEXT_W + 16}px;height:${totalH + 8}px`;
+
+  // ── Symbol cells ──────────────────────────────────────────
+  for (let i = 0; i < N_SYM; i++) {
+    const col = Math.floor(i / LBL_PER_COL);
+    const row = i % LBL_PER_COL;
+    const pad = 4;
+    const cell = document.createElement('div');
+    cell.className = 'lbl-sym-cell' + (i === lblCurIdx ? ' lbl-active' : '');
+    cell.style.cssText = `left:${col*LBL_COL_W+pad}px;top:${row*LBL_ROW_H+pad}px;width:${LBL_COL_W-pad*2}px;height:${LBL_ROW_H-pad*2}px`;
+    cell.title = `Symbol ${i+1}` + (symLabel[i] ? ': ' + symLabel[i].split('\n')[0] : '');
+    const c = document.createElement('canvas');
+    c.width = 44; c.height = 44;
+    if (images[i]) {
+      c.getContext('2d').drawImage(images[i], 0, 0, 44, 44);
+    } else {
+      drawPlaceholder(c, i);
+    }
+    cell.appendChild(c);
+    if (symLabel[i] && symLabel[i].trim()) {
+      const ck = document.createElement('span');
+      ck.textContent = '✓';
+      ck.style.cssText = 'position:absolute;bottom:2px;right:3px;font-size:10px;font-weight:700;color:#2ecc71;line-height:1;pointer-events:none;text-shadow:0 0 3px #000a';
+      cell.appendChild(ck);
+    }
+    cell.addEventListener('click', () => _lblGoTo(i));
+    content.appendChild(cell);
+  }
+
+  // ── Text cells for active column only ─────────────────────
+  const colStart = activeCol * LBL_PER_COL;
+  const colEnd   = Math.min(colStart + LBL_PER_COL, N_SYM);
+  const textX    = gridW + LBL_GAP;
+  const taH      = LBL_ROW_H - 10;  // textarea height = row height minus padding
+
+  for (let i = colStart; i < colEnd; i++) {
+    const row  = i - colStart;
+    const cell = document.createElement('div');
+    cell.className = 'lbl-txt-cell' + (i === lblCurIdx ? ' lbl-txt-active' : '');
+    cell.style.cssText = `left:${textX}px;top:${row*LBL_ROW_H+5}px;width:${LBL_TEXT_W}px;height:${taH}px`;
+    const ta = document.createElement('textarea');
+    ta.id          = `lbl-ta-${i}`;
+    ta.value       = symLabel[i] || '';
+    ta.placeholder = `Label ${i+1}\u2026`;
+    ta.style.fontFamily = font;
+    ta.style.fontSize   = size + 'px';
+    ta.style.height     = taH + 'px';
+    ta.addEventListener('input', () => { symLabel[i] = ta.value; });
+    ta.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        symLabel[i] = ta.value;
+        _lblGoTo((i + 1) % N_SYM);
+      }
+    });
+    cell.appendChild(ta);
+    content.appendChild(cell);
+  }
+
+  // ── Focus active textarea ─────────────────────────────────
+  const activeTa = document.getElementById(`lbl-ta-${lblCurIdx}`);
+  if (activeTa) {
+    requestAnimationFrame(() => {
+      activeTa.focus();
+      activeTa.setSelectionRange(activeTa.value.length, activeTa.value.length);
+    });
+  }
+
+  // ── Scroll active symbol into view ────────────────────────
+  const activeCol2 = Math.floor(lblCurIdx / LBL_PER_COL);
+  const activeRow  = lblCurIdx % LBL_PER_COL;
+  const scrollArea = document.getElementById('lbl-main-area');
+  if (scrollArea) {
+    const symTop = activeRow * LBL_ROW_H;
+    const symLeft = activeCol2 * LBL_COL_W;
+    const areaH = scrollArea.clientHeight;
+    const areaW = scrollArea.clientWidth;
+    if (symTop < scrollArea.scrollTop || symTop + LBL_ROW_H > scrollArea.scrollTop + areaH)
+      scrollArea.scrollTop = symTop - areaH/2 + LBL_ROW_H/2;
+    if (symLeft < scrollArea.scrollLeft || symLeft + LBL_COL_W + LBL_GAP + LBL_TEXT_W > scrollArea.scrollLeft + areaW)
+      scrollArea.scrollLeft = Math.max(0, symLeft - 16);
+  }
+}
+
+function _lblGoTo(idx) {
+  // persist current textarea before leaving
+  const curTa = document.getElementById(`lbl-ta-${lblCurIdx}`);
+  if (curTa) symLabel[lblCurIdx] = curTa.value;
+  lblCurIdx = ((idx % N_SYM) + N_SYM) % N_SYM;
+  _lblRender();
+}
+
+function _lblUpdateFont() {
+  const font = document.getElementById('lbl-font-sel').value;
+  const size = document.getElementById('lbl-size-sel').value;
+  document.querySelectorAll('#lbl-content textarea').forEach(ta => {
+    ta.style.fontFamily = font;
+    ta.style.fontSize   = size + 'px';
+  });
+}
+
+// ─── SELECTION & DRAG STATE ──────────────────────────────
+let selectedPos = -1;
+let dragActive  = false;
+let dragMoved   = false;
+
+// ─── UNDO / REDO ────────────────────────────────────────────
+const undoStack = [], redoStack = [];
+const MAX_UNDO  = 60;
+
+function snapshotLayout(cardIdx) {
+  return JSON.parse(JSON.stringify(layouts[cardIdx]));
+}
+function pushUndo(cardIdx) {
+  undoStack.push({ cardIdx, layout: snapshotLayout(cardIdx) });
+  if (undoStack.length > MAX_UNDO) undoStack.shift();
+  redoStack.length = 0;
+}
+function undo() {
+  if (!undoStack.length) return;
+  const { cardIdx, layout } = undoStack.pop();
+  redoStack.push({ cardIdx, layout: snapshotLayout(cardIdx) });
+  layouts[cardIdx] = layout;
+  if (cardIdx !== currentCard) gotoCard(cardIdx); else renderCard();
+}
+function redo() {
+  if (!redoStack.length) return;
+  const { cardIdx, layout } = redoStack.pop();
+  undoStack.push({ cardIdx, layout: snapshotLayout(cardIdx) });
+  layouts[cardIdx] = layout;
+  if (cardIdx !== currentCard) gotoCard(cardIdx); else renderCard();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// GALLERY
+// ═══════════════════════════════════════════════════════════════
+const galleryList = document.getElementById('gallery-list');
+
+for (let i = 0; i < N_SYM; i++) {
+  const row = document.createElement('div');
+  row.className = 'sym-row';
+  row.id = `row${i}`;
+
+  const c = document.createElement('canvas');
+  c.className = 'sym-canvas';
+  c.width = 44; c.height = 44;
+  c.id = `thumb${i}`;
+  c.title = `Symbol ${i+1} – klicken um Karte zu zeigen`;
+  c.style.cursor = 'pointer';
+  c.addEventListener('click', () => {
+    // collect all cards containing this symbol, then cycle through them
+    const cards = SPOT_IT.reduce((a, card, idx) => { if (card.includes(i)) a.push(idx); return a; }, []);
+    if (!cards.length) return;
+    const next = cards.find(idx => idx > currentCard) ?? cards[0];
+    gotoCard(next);
+  });
+  drawPlaceholder(c, i);
+
+  const num = document.createElement('span');
+  num.className = 'sym-num';
+  num.textContent = i + 1;
+
+  const sliders = document.createElement('div');
+  sliders.className = 'sym-sliders';
+  sliders.innerHTML =
+    `<div class="sl-row">
+       <span class="sl-label">S</span>
+       <input type="range" min="30" max="260" value="100" step="5" data-i="${i}" class="ssl">
+       <span class="sl-val" id="sv${i}">1.0×</span>
+     </div>
+     <div class="sl-row">
+       <span class="sl-label">R</span>
+       <input type="range" min="-180" max="180" value="0" step="5" data-i="${i}" class="rsl">
+       <span class="sl-val" id="rv${i}">0°</span>
+     </div>`;
+
+  // Label input (below sliders)
+  const lblInput = document.createElement('input');
+  lblInput.type = 'text';
+  lblInput.className = 'sym-lbl-input';
+  lblInput.placeholder = `Label ${i+1}…`;
+  lblInput.title = 'Beschriftung für Play-Modus';
+  lblInput.value = symLabel[i] || '';
+  lblInput.addEventListener('input', e2 => { symLabel[i] = e2.target.value.trim(); });
+  sliders.appendChild(lblInput);
+
+  const actions = document.createElement('div');
+  actions.className = 'sym-actions';
+
+  const btnDel = document.createElement('button');
+  btnDel.className = 'sym-act-btn';
+  btnDel.title = 'Bild l\xf6schen';
+  btnDel.textContent = '\uD83D\uDDD1';
+  btnDel.addEventListener('click', () => {
+    images[i] = null;
+    symScale[i] = 1.0;
+    symRot[i]   = 0;
+    syncScaleSlider(i);
+    syncRotSlider(i);
+    drawPlaceholder(document.getElementById(`thumb${i}`), i);
+    renderCard();
+  });
+
+  const btnReplace = document.createElement('button');
+  btnReplace.className = 'sym-act-btn add';
+  btnReplace.title = 'Bild ersetzen';
+  btnReplace.textContent = '\uD83D\uDCC2';
+  btnReplace.addEventListener('click', () => {
+    const inp = document.createElement('input');
+    inp.type = 'file'; inp.accept = 'image/*';
+    inp.addEventListener('change', async () => {
+      if (!inp.files[0]) return;
+      const url = URL.createObjectURL(inp.files[0]);
+      const img = new Image();
+      img.onload = async () => {
+        const bgRemove = document.getElementById('bg-remove').checked;
+        const tol = +document.getElementById('bg-tol').value;
+        const bgFinal = bgRemove ? await removeWhiteBg(img, tol) : img;
+        const final = await padToSquare(bgFinal);
+        images[i] = final;
+        applyAutoScale(i, final);
+        syncScaleSlider(i);
+        syncRotSlider(i);
+        paintThumb(i, final);
+        renderCard();
+        URL.revokeObjectURL(url);
+      };
+      img.src = url;
+    });
+    inp.click();
+  });
+
+  actions.append(btnReplace, btnDel);
+  row.append(c, num, sliders, actions);
+  galleryList.appendChild(row);
+}
+
+// Slider events
+document.querySelectorAll('.ssl').forEach(el => el.addEventListener('input', e => {
+  const i = +e.target.dataset.i;
+  symScale[i] = e.target.value / 100;
+  document.getElementById(`sv${i}`).textContent = symScale[i].toFixed(1) + '×';
+  renderCard();
+}));
+document.querySelectorAll('.rsl').forEach(el => el.addEventListener('input', e => {
+  const i = +e.target.dataset.i;
+  symRot[i] = +e.target.value;
+  document.getElementById(`rv${i}`).textContent = e.target.value + '°';
+  renderCard();
+}));
+
+// Placeholder circle with number
+function drawPlaceholder(canvas, idx) {
+  const ctx = canvas.getContext('2d');
+  const hue = (idx * 47) % 360;
+  ctx.fillStyle = `hsl(${hue},35%,90%)`;
+  ctx.fillRect(0, 0, 44, 44);
+  ctx.fillStyle = `hsl(${hue},40%,55%)`;
+  ctx.beginPath();
+  ctx.arc(22, 22, 18, 0, Math.PI*2);
+  ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 11px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(idx + 1, 22, 22);
+}
+
+// Paint uploaded image into gallery thumbnail
+function paintThumb(idx, img) {
+  const canvas = document.getElementById(`thumb${idx}`);
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, 44, 44);
+  ctx.fillStyle = '#f5f5f5';
+  ctx.fillRect(0, 0, 44, 44);
+  const W = img.naturalWidth || img.width;
+  const H = img.naturalHeight || img.height;
+  const asp = W / H;
+  let dw = 44, dh = 44;
+  if (asp > 1) dh = 44 / asp; else dw = 44 * asp;
+  ctx.drawImage(img, (44 - dw) / 2, (44 - dh) / 2, dw, dh);
+}
+
+// Pad non-square image to largest side (centered, transparent fill)
+// Prevents stretching when drawn into sz×sz card slots
+function padToSquare(img) {
+  const W = img.naturalWidth || img.width;
+  const H = img.naturalHeight || img.height;
+  if (!W || !H || W === H) return Promise.resolve(img);
+  const side = Math.max(W, H);
+  const oc = document.createElement('canvas');
+  oc.width = side; oc.height = side;
+  const ox = Math.round((side - W) / 2);
+  const oy = Math.round((side - H) / 2);
+  oc.getContext('2d').drawImage(img, ox, oy, W, H);
+  return new Promise(resolve => {
+    const out = new Image();
+    out.onload = () => resolve(out);
+    out.src = oc.toDataURL('image/png');
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// WHITE BACKGROUND REMOVAL
+// ═══════════════════════════════════════════════════════════════
+function removeWhiteBg(img, tolerance) {
+  return new Promise(resolve => {
+    const oc = document.createElement('canvas');
+    oc.width  = img.naturalWidth;
+    oc.height = img.naturalHeight;
+    const octx = oc.getContext('2d');
+    octx.drawImage(img, 0, 0);
+    const id = octx.getImageData(0, 0, oc.width, oc.height);
+    const px = id.data, W = oc.width, H = oc.height;
+    const visited = new Uint8Array(W * H);
+
+    function isNearWhite(i) {
+      return px[i] > 255 - tolerance &&
+             px[i+1] > 255 - tolerance &&
+             px[i+2] > 255 - tolerance &&
+             px[i+3] > 10;
+    }
+
+    // Iterative flood fill from all border pixels
+    const stack = [];
+    for (let x = 0; x < W; x++) { stack.push(x, 0); stack.push(x, H-1); }
+    for (let y = 1; y < H-1; y++) { stack.push(0, y); stack.push(W-1, y); }
+
+    while (stack.length) {
+      const y = stack.pop(), x = stack.pop();
+      if (x < 0 || x >= W || y < 0 || y >= H) continue;
+      const vi = y * W + x;
+      if (visited[vi]) continue;
+      visited[vi] = 1;
+      const pi = vi * 4;
+      if (!isNearWhite(pi)) continue;
+      px[pi+3] = 0;
+      stack.push(x+1,y, x-1,y, x,y+1, x,y-1);
+    }
+    octx.putImageData(id, 0, 0);
+    const out = new Image();
+    out.onload = () => resolve(out);
+    out.src = oc.toDataURL('image/png');
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// AUTO-NORMALIZE
+// Scans non-transparent pixels, computes tight bounding box.
+// Returns geometric-mean effective radius so that elongated objects
+// are treated fairly (same "area" = same scale, regardless of aspect).
+// ═══════════════════════════════════════════════════════════════
+const AUTO_NORM_TARGET = 0.72;  // object should fill ~72% of the slot (diagonal fraction)
+
+function measureObject(img) {
+  const W = img.naturalWidth, H = img.naturalHeight;
+  if (!W || !H) return null;
+  const oc = document.createElement('canvas');
+  oc.width = W; oc.height = H;
+  const octx = oc.getContext('2d');
+  octx.drawImage(img, 0, 0);
+  const px = octx.getImageData(0, 0, W, H).data;
+  let minX = W, maxX = -1, minY = H, maxY = -1, count = 0;
+  for (let y = 0; y < H; y++)
+    for (let x = 0; x < W; x++)
+      if (px[(y * W + x) * 4 + 3] > 20) {
+        if (x < minX) minX = x;  if (x > maxX) maxX = x;
+        if (y < minY) minY = y;  if (y > maxY) maxY = y;
+        count++;
+      }
+  if (maxX < minX) return null;
+  const bw = maxX - minX + 1, bh = maxY - minY + 1;
+  // Hybrid measure: geometric mean of bbox-fraction AND pixel-area-fraction
+  // → sparse line-art (small count) gets bigger scale than bbox alone would suggest
+  const bboxFrac  = Math.sqrt((bw / W) * (bh / H));
+  const pixelFrac = Math.sqrt(count / (W * H));
+  const fillFrac  = Math.sqrt(bboxFrac * pixelFrac);   // = (count*bw*bh/(W*H)^2)^(1/4)
+  return { bw, bh, W, H, fillFrac, aspect: bw / bh };
+}
+
+function applyAutoScale(idx, img) {
+  const m = measureObject(img);
+  if (!m || m.fillFrac < 0.01) return;          // degenerate / empty
+  const newScale = Math.min(2.6, Math.max(0.3, AUTO_NORM_TARGET / m.fillFrac));
+  symScale[idx] = newScale;
+  syncScaleSlider(idx);
+}
+// ═══════════════════════════════════════════════════════════════
+// FILE UPLOAD – shared processing
+// ═══════════════════════════════════════════════════════════════
+// items = [{url, name}] sorted, max N_SYM entries
+async function processImageList(items, autoScale = true) {
+  const n = Math.min(items.length, N_SYM);
+  loadedCount = 0;
+  document.getElementById('progress').textContent = `0 / ${n} Bilder geladen…`;
+  for (let idx = 0; idx < n; idx++) {
+    const url = items[idx].url;
+    await new Promise(resolve => {
+      const img = new Image();
+      img.onload = async () => {
+        const bgRemove = document.getElementById('bg-remove').checked;
+        const tol = +document.getElementById('bg-tol').value;
+        const bgFinal = bgRemove ? await removeWhiteBg(img, tol) : img;
+        const final = await padToSquare(bgFinal);
+        images[idx] = final;
+        if (autoScale) applyAutoScale(idx, final);
+        paintThumb(idx, final);
+        loadedCount++;
+        document.getElementById('progress').textContent =
+          `${loadedCount} / ${n} Bilder geladen`;
+        renderCard();
+        resolve();
+      };
+      img.onerror = () => resolve();
+      img.src = url;
+    });
+  }
+}
+
+// ── Regular file picker ──
+document.getElementById('finput').addEventListener('change', e => {
+  const files = [...e.target.files].sort((a, b) =>
+    a.name.localeCompare(b.name, undefined, {numeric:true, sensitivity:'base'}));
+  const items = files.map(f => ({ name: f.name, url: URL.createObjectURL(f) }));
+  processImageList(items);
+  e.target.value = '';
+});
+
+// ── 4×4 Grid image splitter ──
+// Equal 4×4 division. Trims dark lines (< 150 brightness) AND bright uniform
+// background rows/cols from all four edges. Skips entirely blank tiles.
+async function splitGridImage(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const src = new Image();
+      src.onload = () => {
+        const W = src.width, H = src.height;
+        const oc = document.createElement('canvas');
+        oc.width = W; oc.height = H;
+        const g = oc.getContext('2d');
+        g.drawImage(src, 0, 0);
+        const px = g.getImageData(0, 0, W, H).data;
+
+        function rowBright(y, x0, x1) {
+          let s = 0; const n = x1 - x0;
+          for (let x = x0; x < x1; x++) { const i = (y*W+x)*4; s += px[i]+px[i+1]+px[i+2]; }
+          return s / (n * 3);
+        }
+        function colBright(x, y0, y1) {
+          let s = 0; const n = y1 - y0;
+          for (let y = y0; y < y1; y++) { const i = (y*W+x)*4; s += px[i]+px[i+1]+px[i+2]; }
+          return s / (n * 3);
+        }
+        // Trimmable: dark line (separator) OR very bright uniform background
+        function trimRow(y, x0, x1) {
+          const b = rowBright(y, x0, x1);
+          if (b < 150) return true;
+          if (b > 235) {
+            let dev = 0; const n = x1-x0;
+            for (let x = x0; x < x1; x++) { const i=(y*W+x)*4; dev+=Math.abs(px[i]-b)+Math.abs(px[i+1]-b)+Math.abs(px[i+2]-b); }
+            if (dev/n < 25) return true;
+          }
+          return false;
+        }
+        function trimCol(x, y0, y1) {
+          const b = colBright(x, y0, y1);
+          if (b < 150) return true;
+          if (b > 235) {
+            let dev = 0; const n = y1-y0;
+            for (let y = y0; y < y1; y++) { const i=(y*W+x)*4; dev+=Math.abs(px[i]-b)+Math.abs(px[i+1]-b)+Math.abs(px[i+2]-b); }
+            if (dev/n < 25) return true;
+          }
+          return false;
+        }
+        // Blank tile: uniform bright content → skip
+        function isBlank(tx0, ty0, tx1, ty1) {
+          const area = (tx1-tx0)*(ty1-ty0);
+          if (area === 0) return true;
+          let s = 0;
+          for (let y = ty0; y < ty1; y++) for (let x = tx0; x < tx1; x++) { const i=(y*W+x)*4; s+=px[i]+px[i+1]+px[i+2]; }
+          const mean = s / (area * 3);
+          if (mean < 200) return false;
+          let dev = 0;
+          for (let y = ty0; y < ty1; y++) for (let x = tx0; x < tx1; x++) { const i=(y*W+x)*4; dev+=Math.abs(px[i]-mean)+Math.abs(px[i+1]-mean)+Math.abs(px[i+2]-mean); }
+          return dev / area < 12;
+        }
+
+        const extraTrim = parseInt(document.getElementById('grid-trim').value) || 0;
+        const cw = W / 4, ch = H / 4;
+        const maxTrimW = Math.round(cw * 0.25);
+        const maxTrimH = Math.round(ch * 0.25);
+
+        const urls = [];
+        for (let r = 0; r < 4; r++) {
+          for (let c = 0; c < 4; c++) {
+            let tx0 = Math.round(c * cw),   ty0 = Math.round(r * ch);
+            let tx1 = Math.round((c+1)*cw), ty1 = Math.round((r+1)*ch);
+            let t = 0;
+            while (t < maxTrimH && ty0 < ty1-1 && trimRow(ty0, tx0, tx1)) { ty0++; t++; }
+            t = 0;
+            while (t < maxTrimH && ty1 > ty0+1 && trimRow(ty1-1, tx0, tx1)) { ty1--; t++; }
+            t = 0;
+            while (t < maxTrimW && tx0 < tx1-1 && trimCol(tx0, ty0, ty1)) { tx0++; t++; }
+            t = 0;
+            while (t < maxTrimW && tx1 > tx0+1 && trimCol(tx1-1, ty0, ty1)) { tx1--; t++; }
+            // Extra trim from slider — cuts off remaining grid lines
+            ty0 += extraTrim; ty1 -= extraTrim; tx0 += extraTrim; tx1 -= extraTrim;
+            if (isBlank(tx0, ty0, tx1, ty1)) continue;
+            // Force square by padding to the LARGER side (centered, transparent fill)
+            const tw = tx1-tx0, th = ty1-ty0;
+            const side = Math.max(tw, th);
+            const tc = document.createElement('canvas');
+            tc.width = side; tc.height = side;
+            const ox = Math.round((side - tw) / 2);
+            const oy = Math.round((side - th) / 2);
+            tc.getContext('2d').drawImage(oc, tx0, ty0, tw, th, ox, oy, tw, th);
+            urls.push(tc.toDataURL('image/png'));
+          }
+        }
+        resolve(urls);
+      };
+      src.onerror = () => reject(new Error('Bild konnte nicht geladen werden'));
+      src.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+document.getElementById('ginput').addEventListener('change', async e => {
+  const files = [...e.target.files].slice(0, 4)
+    .sort((a, b) => a.name.localeCompare(b.name, undefined, {numeric:true, sensitivity:'base'}));
+  e.target.value = '';
+  if (!files.length) return;
+  const status = document.getElementById('dl-status');
+  const items = [];
+  for (const file of files) {
+    status.textContent = `⏳ Schneide ${file.name}…`;
+    const tiles = await splitGridImage(file);
+    tiles.forEach((url, i) => items.push({ name: `${file.name}_t${String(i+1).padStart(2,'0')}`, url }));
+  }
+  status.textContent = `⏳ Lade ${items.length} Symbole…`;
+  const autoScale = document.getElementById('grid-autoscale').checked;
+  await processImageList(items, autoScale);
+  status.textContent = `✓ ${items.length} Symbole aus Grid(s) geladen!`;
+  setTimeout(() => status.textContent = '', 5000);
+});
+
+// ── ZIP file reader (no library – parses central directory natively) ──
+const IMAGE_RE = /\.(png|jpe?g|gif|webp|bmp|svg)$/i;
+
+async function readZipImages(buffer) {
+  const u8 = new Uint8Array(buffer);
+  const dv = new DataView(buffer);
+
+  // 1. Find End of Central Directory signature (0x06054b50)
+  let eocd = -1;
+  for (let i = u8.length - 22; i >= Math.max(0, u8.length - 65558); i--)
+    if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  if (eocd < 0) throw new Error('Kein gültiges ZIP-File');
+
+  const cdCount  = dv.getUint16(eocd + 10, true);
+  const cdOffset = dv.getUint32(eocd + 16, true);
+
+  // 2. Parse central directory entries
+  const entries = [];
+  let pos = cdOffset;
+  for (let e = 0; e < cdCount; e++) {
+    if (dv.getUint32(pos, true) !== 0x02014b50) break;
+    const compression  = dv.getUint16(pos + 10, true);
+    const compSz       = dv.getUint32(pos + 20, true);
+    const nameLen      = dv.getUint16(pos + 28, true);
+    const extraLen     = dv.getUint16(pos + 30, true);
+    const commentLen   = dv.getUint16(pos + 32, true);
+    const localOffset  = dv.getUint32(pos + 42, true);
+    const name         = new TextDecoder().decode(u8.slice(pos + 46, pos + 46 + nameLen));
+    pos += 46 + nameLen + extraLen + commentLen;
+    // Image files and settings JSON, skip Mac metadata and directory entries
+    if ((IMAGE_RE.test(name) || name.endsWith('.json')) && !name.includes('__MACOSX') && !name.endsWith('/'))
+      entries.push({ name, compression, compSz, localOffset });
+  }
+
+  entries.sort((a, b) => a.name.localeCompare(b.name, undefined, {numeric:true, sensitivity:'base'}));
+
+  // 3. Extract each file
+  const results = [];
+  for (const f of entries) {
+    const lnameLen  = dv.getUint16(f.localOffset + 26, true);
+    const lextraLen = dv.getUint16(f.localOffset + 28, true);
+    const dataStart = f.localOffset + 30 + lnameLen + lextraLen;
+    const compData  = u8.slice(dataStart, dataStart + f.compSz);
+
+    let raw;
+    if (f.compression === 0) {                          // Store
+      raw = compData;
+    } else if (f.compression === 8) {                   // Deflate
+      const ds = new DecompressionStream('deflate-raw');
+      const w = ds.writable.getWriter();
+      const r = ds.readable.getReader();
+      w.write(compData); w.close();
+      const chunks = [];
+      let chunk = await r.read();
+      while (!chunk.done) { chunks.push(chunk.value); chunk = await r.read(); }
+      const total = chunks.reduce((s, c) => s + c.length, 0);
+      raw = new Uint8Array(total);
+      let p = 0; for (const c of chunks) { raw.set(c, p); p += c.length; }
+    } else continue;  // unsupported compression
+
+    const ext  = f.name.split('.').pop().toLowerCase();
+    if (ext === 'json') {
+      // Settings file — return raw text, not a blob URL
+      results.push({ name: f.name, isSettings: true, text: new TextDecoder().decode(raw) });
+      continue;
+    }
+    const mime = ({png:'image/png', jpg:'image/jpeg', jpeg:'image/jpeg',
+                   gif:'image/gif', webp:'image/webp', bmp:'image/bmp',
+                   svg:'image/svg+xml'})[ext] || 'image/png';
+    results.push({ name: f.name, url: URL.createObjectURL(new Blob([raw], {type:mime})) });
+  }
+  return results;
+}
+
+document.getElementById('zinput').addEventListener('change', async e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  e.target.value = '';
+  await _loadDblFile(file);
+});
+
+async function _loadDblFile(file) {
+  document.getElementById('progress').textContent = '.dbl wird gelesen…';
+  try {
+    const buffer = await file.arrayBuffer();
+    const all    = await readZipImages(buffer);
+    const settingsEntries = all.filter(it => it.isSettings);
+    const items           = all.filter(it => !it.isSettings);
+    for (const s of settingsEntries) {
+      try {
+        const obj = JSON.parse(s.text);
+        if (obj.version === 1 || obj.version === 2) _applySettings(obj);
+      } catch(_) {}
+    }
+    if (!items.length && !settingsEntries.length) {
+      document.getElementById('progress').textContent = 'Keine Bilder/Settings gefunden';
+      return;
+    }
+    if (items.length) await processImageList(items);
+    items.forEach(it => URL.revokeObjectURL(it.url));
+    if (!items.length && settingsEntries.length)
+      document.getElementById('progress').textContent = `✓ Settings geladen!`;
+  } catch(err) {
+    document.getElementById('progress').textContent = 'Fehler: ' + err.message;
+  }
+}
+
+// ── Directory scan ──────────────────────────────────────────
+async function scanDblFolder() {
+  if (!window.showDirectoryPicker) {
+    alert('Ordner-Scan benötigt Chrome oder Edge (File System Access API).');
+    return;
+  }
+  let dirHandle;
+  try {
+    dirHandle = await window.showDirectoryPicker({ mode: 'read', startIn: 'downloads' });
+  } catch(e) { return; }  // user cancelled
+
+  // show panel immediately
+  let overlay = document.getElementById('scan-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'scan-overlay';
+    overlay.innerHTML =
+      `<div id="scan-header">
+         <h2>🔍 .dbl Dateien in Ordner</h2>
+         <span id="scan-status">Scanne…</span>
+         <button id="scan-close-btn" onclick="document.getElementById('scan-overlay').classList.remove('show')">&#x2715; Schließen</button>
+       </div>
+       <div id="scan-list"></div>`;
+    document.body.appendChild(overlay);
+  }
+  overlay.classList.add('show');
+  const list = document.getElementById('scan-list');
+  const status = document.getElementById('scan-status');
+  list.innerHTML = '';
+
+  const found = [];
+  try {
+    for await (const [name, handle] of dirHandle.entries()) {
+      try {
+        if (handle.kind === 'file' && /\.(dbl|zip)$/i.test(name)) {
+          found.push({ name, handle });
+        }
+      } catch(e) { /* skip unreadable entries */ }
+    }
+  } catch(e) {
+    status.textContent = 'Scan-Fehler: ' + e.message;
+  }
+
+  status.textContent = `${found.length} Datei(en) gefunden`;
+  if (!found.length) {
+    list.innerHTML = '<div style="color:#4a6070;padding:32px">Keine .dbl oder .zip Dateien gefunden.</div>';
+    return;
+  }
+
+  for (const { name, handle } of found) {
+    const card = document.createElement('div');
+    card.className = 'scan-card';
+    const c = document.createElement('canvas');
+    c.width = 80; c.height = 80;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#142636';
+    ctx.beginPath(); ctx.arc(40,40,38,0,Math.PI*2); ctx.fill();
+    const nameEl = document.createElement('div');
+    nameEl.className = 'scan-name';
+    nameEl.textContent = name;
+    card.appendChild(c);
+    card.appendChild(nameEl);
+    list.appendChild(card);
+
+    // async: read file and render first image as thumb
+    (async () => {
+      try {
+        const file = await handle.getFile();
+        const buf  = await file.arrayBuffer();
+        const all  = await readZipImages(buf);
+        const imgs = all.filter(it => !it.isSettings);
+        if (imgs.length) {
+          const first = imgs[0];
+          const img = new Image();
+          img.onload = () => {
+            ctx.clearRect(0,0,80,80);
+            ctx.save(); ctx.beginPath(); ctx.arc(40,40,38,0,Math.PI*2); ctx.clip();
+            const s = Math.min(80/img.width,80/img.height)*0.9;
+            const dw = img.width*s, dh = img.height*s;
+            ctx.drawImage(img,(80-dw)/2,(80-dh)/2,dw,dh);
+            ctx.restore();
+            URL.revokeObjectURL(img.src);
+          };
+          img.src = first.url;
+        }
+        imgs.forEach(it => { /* keep urls until card clicked */ });
+        card.addEventListener('click', async () => {
+          overlay.classList.remove('show');
+          await _loadDblFile(await handle.getFile());
+        });
+      } catch(e) {
+        const err = document.createElement('div');
+        err.className = 'scan-err';
+        err.textContent = 'Lesefehler';
+        card.appendChild(err);
+      }
+    })();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CARD RENDERING
+// ═══════════════════════════════════════════════════════════════
+const canvas  = document.getElementById('card-canvas');
+const ctx     = canvas.getContext('2d');
+const CW = 700, CH = 700, cx = 350, cy = 350;
+const CARD_R  = 320;   // card circle radius (px)
+let   ringR   = 195;   // global ring radius for outer 7 symbols (adjustable)
+const BASE_SZ = 115;   // base image size at scale = 1.0
+
+function renderCard() {
+  ctx.clearRect(0, 0, CW, CH);
+
+  const bgColor     = document.getElementById('bg-color').value;
+  const borderColor = document.getElementById('border-color').value;
+
+  // Draw card circle + clip
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, CARD_R, 0, Math.PI * 2);
+  ctx.fillStyle = bgColor;
+  ctx.fill();
+  ctx.clip();
+
+  const card      = SPOT_IT[currentCard];
+  const layout    = layouts[currentCard];
+  const positions = computePositions(card, layout);
+
+  // ── Draw 8 symbols ──
+  for (let pos = 0; pos < 8; pos++) {
+    const symIdx   = card[layout.order[pos]];
+    const img      = images[symIdx];
+    const sz       = BASE_SZ * globalScale * symScale[symIdx];
+    const rot      = layout.baseRot[pos] + (symRot[symIdx] + (layout.rotAdj?.[pos] ?? 0)) * Math.PI / 180;
+    const [px, py] = positions[pos];
+
+    ctx.save();
+    ctx.translate(px, py);
+    ctx.rotate(rot);
+
+    if (img) {
+      ctx.drawImage(img, -sz / 2, -sz / 2, sz, sz);
+    } else {
+      // Placeholder: colored circle with symbol number
+      const hue = (symIdx * 47) % 360;
+      ctx.beginPath();
+      ctx.arc(0, 0, sz / 2, 0, Math.PI * 2);
+      ctx.fillStyle = `hsl(${hue},40%,88%)`;
+      ctx.fill();
+      ctx.strokeStyle = `hsl(${hue},40%,60%)`;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle = `hsl(${hue},40%,35%)`;
+      ctx.font = `bold ${Math.round(sz * 0.33)}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(symIdx + 1, 0, 0);
+    }
+
+    ctx.restore();
+  }
+
+  // ── Ring-radius guide ──
+  if (document.getElementById('show-ring')?.checked) {
+    const r = ringR + (layout.ringROffset ?? 0);
+    // main ring circle
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(230,126,34,0.45)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([8, 5]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // per-symbol radius circles showing actual rendered size
+    for (let pos = 0; pos < 8; pos++) {
+      const [spx, spy] = positions[pos];
+      const sIdx = card[layout.order[pos]];
+      const sr   = (BASE_SZ * globalScale * symScale[sIdx]) / 2;
+      ctx.beginPath();
+      ctx.arc(spx, spy, sr, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(230,126,34,0.30)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
+
+  // ── Selection ring ──
+  if (selectedPos >= 0) {
+    const [hx, hy] = positions[selectedPos];
+    const hsymIdx  = card[layout.order[selectedPos]];
+    const hsz = (BASE_SZ * globalScale * symScale[hsymIdx]) / 2 + 8;
+    ctx.beginPath();
+    ctx.arc(hx, hy, hsz, 0, Math.PI * 2);
+    ctx.strokeStyle = '#f39c12';
+    ctx.lineWidth = 3;
+    ctx.setLineDash([7, 4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  ctx.restore();  // remove clip
+
+  // Card border (drawn after clip removal so it's always fully visible)
+  ctx.beginPath();
+  ctx.arc(cx, cy, CARD_R, 0, Math.PI * 2);
+  ctx.strokeStyle = borderColor;
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  updateHighlights();
+}
+
+function updateHighlights() {
+  const cardSet = new Set(SPOT_IT[currentCard]);
+  for (let i = 0; i < N_SYM; i++)
+    document.getElementById(`row${i}`).classList.toggle('on-card', cardSet.has(i));
+}
+
+// ═══════════════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════════════
+function gotoCard(idx) {
+  selectedPos = -1;
+  currentCard = Math.max(0, Math.min(N_CARD - 1, idx));
+  // Scroll gallery to first symbol on the new card
+  setTimeout(() => {
+    const first = document.querySelector('.sym-row.on-card');
+    first?.scrollIntoView({behavior: 'smooth', block: 'nearest'});
+  }, 0);
+  document.getElementById('card-slider').value = currentCard;
+  document.getElementById('card-num').textContent = `/ ${N_CARD}`;
+  const di = document.getElementById('card-direct');
+  if (di) di.value = currentCard + 1;
+  // Also update card ring-r slider when switching cards
+  const crr = document.getElementById('card-ring-r');
+  const crrv = document.getElementById('crr-val');
+  if (crr) {
+    const off = layouts[currentCard]?.ringROffset ?? 0;
+    crr.value = off;
+    crrv.textContent = (off >= 0 ? '+' : '') + off;
+  }
+  renderCard();
+}
+function navigate(d) { gotoCard(currentCard + d); }
+
+// Keyboard navigation
+document.addEventListener('keydown', e => {
+  // Don't steal focus from text/number inputs (but allow on range sliders)
+  if (e.target.tagName === 'INPUT' && e.target.type !== 'range') return;
+  if (e.target.tagName === 'TEXTAREA') return;
+
+  // Undo / Redo
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+    e.preventDefault(); undo(); return;
+  }
+  if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'y' ||
+      (e.key.toLowerCase() === 'z' && e.shiftKey))) {
+    e.preventDefault(); redo(); return;
+  }
+
+  // Symbol manipulation (when a symbol is selected)
+  if (selectedPos >= 0) {
+    const layout    = layouts[currentCard];
+    const card      = SPOT_IT[currentCard];
+    const positions = computePositions(card, layout);
+    const [px, py]  = positions[selectedPos];
+    const symIdx    = card[layout.order[selectedPos]];
+    const STEP = e.shiftKey ? 1 : 5;
+    if (!layout.customPos) layout.customPos = new Array(8).fill(null);
+
+    if (!e.ctrlKey) {
+      // Arrow keys → move
+      if (e.key === 'ArrowRight') { pushUndo(currentCard); layout.customPos[selectedPos] = [px + STEP, py]; e.preventDefault(); renderCard(); return; }
+      if (e.key === 'ArrowLeft')  { pushUndo(currentCard); layout.customPos[selectedPos] = [px - STEP, py]; e.preventDefault(); renderCard(); return; }
+      if (e.key === 'ArrowDown')  { pushUndo(currentCard); layout.customPos[selectedPos] = [px, py + STEP]; e.preventDefault(); renderCard(); return; }
+      if (e.key === 'ArrowUp')    { pushUndo(currentCard); layout.customPos[selectedPos] = [px, py - STEP]; e.preventDefault(); renderCard(); return; }
+    } else {
+      // Ctrl + Arrow → rotate (per-card)
+      const RSTEP = e.shiftKey ? 1 : 5;
+      if (!layout.rotAdj) layout.rotAdj = new Array(8).fill(0);
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        pushUndo(currentCard);
+        layout.rotAdj[selectedPos] = (layout.rotAdj[selectedPos] ?? 0) + RSTEP;
+        e.preventDefault(); renderCard(); return;
+      }
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        pushUndo(currentCard);
+        layout.rotAdj[selectedPos] = (layout.rotAdj[selectedPos] ?? 0) - RSTEP;
+        e.preventDefault(); renderCard(); return;
+      }
+    }
+
+    // Space → scale up / Shift+Space → scale down
+    if (e.key === ' ') {
+      pushUndo(currentCard);
+      const delta = e.shiftKey ? -0.05 : 0.05;
+      symScale[symIdx] = Math.min(2.6, Math.max(0.3, symScale[symIdx] + delta));
+      syncScaleSlider(symIdx); e.preventDefault(); renderCard(); return;
+    }
+    // Delete / Backspace → reset custom position + rotation
+    if (e.key === 'Delete' || e.key === 'Backspace') {
+      pushUndo(currentCard);
+      layout.customPos[selectedPos] = null;
+      if (layout.rotAdj) layout.rotAdj[selectedPos] = 0;
+      e.preventDefault(); renderCard(); return;
+    }
+    // Escape → deselect
+    if (e.key === 'Escape') { selectedPos = -1; renderCard(); return; }
+    return;  // eat remaining keys while symbol is selected
+  }
+
+  // Card navigation (no symbol selected)
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); navigate(1); }
+  if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   { e.preventDefault(); navigate(-1); }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// RANDOMIZE
+// ═══════════════════════════════════════════════════════════════
+function randomizeCurrent() { layouts[currentCard] = mkLayout(); renderCard(); }
+function randomizeAll()     { for(let i=0;i<N_CARD;i++) layouts[i]=mkLayout(); renderCard(); }
+
+// ═══════════════════════════════════════════════════════════════
+// EXPORT
+// ═══════════════════════════════════════════════════════════════
+function triggerDownload(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = Object.assign(document.createElement('a'), {href:url, download:filename});
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function dlCurrent() {
+  canvas.toBlob(blob => {
+    triggerDownload(blob, `SPOT_IT-${String(currentCard+1).padStart(2,'0')}.png`);
+  }, 'image/png');
+}
+
+async function dlAll() {
+  const status = document.getElementById('dl-status');
+  const orig   = currentCard;
+  for (let i = 0; i < N_CARD; i++) {
+    gotoCard(i);
+    status.textContent = `⏳ Exportiere Karte ${i+1} / ${N_CARD}…`;
+    await new Promise(r => setTimeout(r, 80));   // let canvas render
+    await new Promise(resolve => canvas.toBlob(blob => {
+      triggerDownload(blob, `SPOT_IT-${String(i+1).padStart(2,'0')}.png`);
+      resolve();
+    }, 'image/png'));
+    await new Promise(r => setTimeout(r, 250));  // avoid browser download throttling
+  }
+  gotoCard(orig);
+  status.textContent = '✓ Alle 55 Karten exportiert!';
+  setTimeout(() => status.textContent = '', 5000);
+}
+
+async function dlSymbolGrid() {
+  const COLS = 4, ROWS = 4;           // 16 cells per page, 4 pages = 64 slots
+  const CELL = 320;                   // px per symbol cell
+  const SEP  = 8;                     // black separator thickness
+  const PAD  = SEP;                   // outer border
+  const W = PAD + COLS * CELL + (COLS - 1) * SEP + PAD;
+  const H = PAD + ROWS * CELL + (ROWS - 1) * SEP + PAD;
+  const PER_PAGE = COLS * ROWS;       // 16
+  const N_PAGES  = 4;
+
+  const bgColor = document.getElementById('bg-color').value;
+  const status  = document.getElementById('dl-status');
+
+  function drawCell(g, cellIdx, pageIdx) {
+    const symIdx = pageIdx * PER_PAGE + cellIdx;
+    const col = cellIdx % COLS;
+    const row = Math.floor(cellIdx / COLS);
+    const x   = PAD + col * (CELL + SEP);
+    const y   = PAD + row * (CELL + SEP);
+
+    g.fillStyle = bgColor;
+    g.fillRect(x, y, CELL, CELL);
+
+    if (symIdx >= N_SYM) return;   // empty cell
+
+    const img = images[symIdx];
+    if (!img) {
+      const hue = (symIdx * 47) % 360;
+      g.beginPath(); g.arc(x + CELL/2, y + CELL/2, CELL/2 - 12, 0, Math.PI*2);
+      g.fillStyle = `hsl(${hue},40%,88%)`; g.fill();
+      g.strokeStyle = `hsl(${hue},40%,60%)`; g.lineWidth = 2; g.stroke();
+      g.fillStyle = `hsl(${hue},40%,35%)`;
+      g.font = `bold ${Math.round(CELL * 0.28)}px sans-serif`;
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText(symIdx + 1, x + CELL/2, y + CELL/2);
+    } else {
+      const sz = document.getElementById('grid-scale').checked
+        ? Math.round(CELL * symScale[symIdx])
+        : CELL;
+      g.save();
+      g.translate(x + CELL/2, y + CELL/2);
+      g.rotate(symRot[symIdx] * Math.PI / 180);
+      g.drawImage(img, -sz/2, -sz/2, sz, sz);
+      g.restore();
+    }
+  }
+
+  for (let p = 0; p < N_PAGES; p++) {
+    status.textContent = `⏳ Erstelle Symbol-Grid ${p+1} / ${N_PAGES}…`;
+    const gc = document.createElement('canvas');
+    gc.width = W; gc.height = H;
+    const g = gc.getContext('2d');
+    g.fillStyle = '#000';
+    g.fillRect(0, 0, W, H);
+    for (let c = 0; c < PER_PAGE; c++) drawCell(g, c, p);
+    await new Promise(resolve => gc.toBlob(blob => {
+      triggerDownload(blob, `SPOT_IT-symbol-grid-${p+1}.png`);
+      resolve();
+    }, 'image/png'));
+    await new Promise(r => setTimeout(r, 300));
+  }
+
+  status.textContent = `✓ 4 Symbol-Grid-Seiten exportiert!`;
+  setTimeout(() => status.textContent = '', 4000);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// IMPORT / EXPORT CHOOSERS
+// ═══════════════════════════════════════════════════════════════
+function openIC()  { document.getElementById('ic-overlay').classList.add('show'); }
+function closeIC() { document.getElementById('ic-overlay').classList.remove('show'); }
+function openEC()  { document.getElementById('ec-overlay').classList.add('show'); }
+function closeEC() { document.getElementById('ec-overlay').classList.remove('show'); }
+
+async function triggerImport(mode) {
+  closeIC();
+  // Use showOpenFilePicker (Chrome/Edge) so Downloads is preselected
+  if (window.showOpenFilePicker) {
+    try {
+      if (mode === 'files') {
+        const handles = await showOpenFilePicker({ multiple: true, startIn: 'downloads',
+          types: [{ description: 'Bilder', accept: {'image/*': ['.png','.jpg','.jpeg','.gif','.webp','.svg']} }] });
+        const files = (await Promise.all(handles.map(h => h.getFile())))
+          .sort((a,b) => a.name.localeCompare(b.name, undefined, {numeric:true, sensitivity:'base'}));
+        processImageList(files.map(f => ({ name: f.name, url: URL.createObjectURL(f) })));
+      } else if (mode === 'grid') {
+        const handles = await showOpenFilePicker({ multiple: true, startIn: 'downloads',
+          types: [{ description: 'Bilder', accept: {'image/*': ['.png','.jpg','.jpeg','.gif','.webp']} }] });
+        const files = (await Promise.all(handles.map(h => h.getFile())))
+          .slice(0,4).sort((a,b) => a.name.localeCompare(b.name, undefined, {numeric:true, sensitivity:'base'}));
+        if (!files.length) return;
+        const status = document.getElementById('dl-status');
+        const items = [];
+        for (const file of files) {
+          status.textContent = `⏳ Schneide ${file.name}…`;
+          const tiles = await splitGridImage(file);
+          tiles.forEach((url, i) => items.push({ name: `${file.name}_t${String(i+1).padStart(2,'0')}`, url }));
+        }
+        status.textContent = `⏳ Lade ${items.length} Symbole…`;
+        const autoScale = document.getElementById('grid-autoscale').checked;
+        await processImageList(items, autoScale);
+        status.textContent = `✓ ${items.length} Symbole aus Grid(s) geladen!`;
+        setTimeout(() => status.textContent = '', 5000);
+      } else if (mode === 'settings') {
+        const [handle] = await showOpenFilePicker({ startIn: 'downloads',
+          types: [{ description: 'JSON Settings', accept: {'application/json': ['.json']} }] });
+        const file = await handle.getFile();
+        try { _applySettings(JSON.parse(await file.text())); }
+        catch(err) { alert('Fehler beim Laden: ' + err.message); }
+      } else if (mode === 'zip') {
+        const [handle] = await showOpenFilePicker({ startIn: 'downloads',
+          types: [{ description: 'Spot-It Datei', accept: {'application/octet-stream': ['.dbl','.zip']} }] });
+        await _loadDblFile(await handle.getFile());
+      }
+      return;
+    } catch(e) {
+      if (e.name === 'AbortError') return;  // user cancelled
+      // fall through to legacy input
+    }
+  }
+  // Fallback (Firefox)
+  if      (mode === 'files')    document.getElementById('finput').click();
+  else if (mode === 'grid')     document.getElementById('ginput').click();
+  else if (mode === 'settings') document.getElementById('settings-input').click();
+  else if (mode === 'zip')      document.getElementById('zinput').click();
+}
+function triggerExport(mode) {
+  closeEC();
+  if      (mode === 'zip')      dlZip();
+  else if (mode === 'grid')     dlSymbolGrid();
+  else if (mode === 'settings') saveSettings();
+  else if (mode === 'print') {
+    const v = document.querySelector('input[name="print-mode"]:checked')?.value || 'pair';
+    if      (v === 'all')  dlAllPairsZip();
+    else if (v === 'card') dlCurrent();
+    else                   dlPair();
+  }
+}
+
+async function dlAllPairsZip() {
+  const status = document.getElementById('dl-status');
+  const total  = Math.ceil(N_CARD / 2);
+  const files  = [];
+  for (let p = 0; p < total; p++) {
+    const idxA = p * 2;
+    const idxB = (idxA + 1 < N_CARD) ? idxA + 1 : null;  // last: branding
+    status.textContent = `⏳ Rendere Paar ${p+1} / ${total}…`;
+    const pairCanvas = await _renderPairCanvas(idxA, idxB);
+    const blob = await new Promise(r => pairCanvas.toBlob(r, 'image/png'));
+    const bytes = new Uint8Array(await blob.arrayBuffer());
+    const nameB = (idxB === null) ? 'branding' : String(idxB+1).padStart(2,'0');
+    files.push({ name: `print/SPOT_IT-print-${String(idxA+1).padStart(2,'0')}-${nameB}.png`, data: bytes });
+  }
+  // Settings
+  files.push({ name: 'SPOT_IT-settings.json', data: new TextEncoder().encode(JSON.stringify(buildSettingsObj(), null, 2)) });
+  status.textContent = '⏳ Erstelle ZIP…';
+  triggerDownload(new Blob([_buildZip(files)], {type:'application/zip'}), 'SPOT_IT-print-all.zip');
+  status.textContent = `✓ ZIP: ${total} Paare exportiert (letztes = Karte 55 + Branding)!`;
+  setTimeout(() => status.textContent = '', 6000);
+}
+
+async function _renderPairCanvas(idxA, idxB) {
+  const PW = 1772, PH = 1181;
+  const MARGIN = 59;   // 5 mm @ 300 dpi
+  const GAP    = 10;   // minimal gap between the two cards
+  const DIAM   = Math.min(Math.floor((PW - 2*MARGIN - GAP) / 2), PH - 2*MARGIN); // 822
+  const offX   = MARGIN;
+  const offY   = Math.round((PH - DIAM) / 2);
+  const pair = document.createElement('canvas');
+  pair.width = PW; pair.height = PH;
+  const pc = pair.getContext('2d');
+  pc.fillStyle = '#ffffff'; pc.fillRect(0, 0, PW, PH);
+  const cA = await renderCardToCanvas(idxA);
+  pc.drawImage(cA, offX, offY, DIAM, DIAM);
+  if (idxB !== null) {
+    const cB = await renderCardToCanvas(idxB);
+    pc.drawImage(cB, offX + DIAM + GAP, offY, DIAM, DIAM);
+  } else {
+    _drawBrandingCircle(pc, offX + DIAM + GAP, offY, DIAM);
+  }
+  const bx = PW - 22, by = 22;
+  pc.save(); pc.textAlign='right'; pc.textBaseline='top';
+  pc.font='68px sans-serif'; pc.fillStyle='#000'; pc.fillText('\uD83D\uDC1D', bx, by);
+  pc.font='bold 27px system-ui,sans-serif'; pc.fillStyle='#111'; pc.fillText('Holger Specht', bx, by+76);
+  pc.font='21px system-ui,sans-serif'; pc.fillStyle='#555'; pc.fillText('Bad Abbach', bx, by+108);
+  pc.strokeStyle='#ccc'; pc.lineWidth=1;
+  pc.beginPath(); pc.moveTo(bx-265, by+136); pc.lineTo(bx, by+136); pc.stroke();
+  pc.font='17px system-ui,sans-serif'; pc.fillStyle='#999';
+  pc.fillText('Private License', bx, by+141);  pc.restore();
+  return pair;
+}
+
+function _drawBrandingCircle(pc, x, y, diam) {
+  // Draw a branding circle at position (x,y) with given diameter
+  pc.save();
+  pc.beginPath(); pc.arc(x + diam/2, y + diam/2, diam/2, 0, Math.PI*2);
+  pc.fillStyle = '#f9f9f9'; pc.fill();
+  pc.strokeStyle = '#888'; pc.lineWidth = 3; pc.stroke();
+  pc.clip();
+  const cx2 = x + diam/2, cy2 = y + diam/2;
+  pc.textAlign = 'center'; pc.textBaseline = 'middle';
+  pc.font = `${Math.round(diam*0.28)}px sans-serif`;
+  pc.fillText('\uD83D\uDC1D', cx2, cy2 - diam*0.12);
+  pc.font = `bold ${Math.round(diam*0.055)}px system-ui,sans-serif`;
+  pc.fillStyle = '#111';
+  pc.fillText('Holger Specht', cx2, cy2 + diam*0.16);
+  pc.font = `${Math.round(diam*0.045)}px system-ui,sans-serif`;
+  pc.fillStyle = '#555';
+  pc.fillText('Bad Abbach', cx2, cy2 + diam*0.23);
+  pc.fillStyle = '#aaa';
+  pc.font = `${Math.round(diam*0.038)}px system-ui,sans-serif`;
+  pc.fillText('Private License', cx2, cy2 + diam*0.32);
+  pc.restore();
+}
+
+async function _renderBrandingCanvas() {
+  const PW = 1772, PH = 1181;
+  const page = document.createElement('canvas');
+  page.width = PW; page.height = PH;
+  const pc = page.getContext('2d');
+  pc.fillStyle = '#ffffff'; pc.fillRect(0, 0, PW, PH);
+  const cx2 = PW/2, cy2 = PH/2;
+  pc.save(); pc.textAlign='center'; pc.textBaseline='alphabetic';
+  pc.font='220px sans-serif'; pc.fillText('\uD83D\uDC1D', cx2, cy2-60);
+  pc.fillStyle='#222222'; pc.font='bold 42px sans-serif'; pc.fillText('created with a private License', cx2, cy2+115);
+  pc.font='36px sans-serif'; pc.fillStyle='#444';
+  pc.fillText('Holger Specht, Bad Abbach', cx2, cy2+166);
+  pc.restore();
+  return page;
+}
+
+// ── ZIP EXPORT ──
+// Minimal uncompressed ZIP creator (no library needed)
+const _CRC_TABLE = (() => {
+  const t = new Uint32Array(256);
+  for (let i=0;i<256;i++){let c=i;for(let j=0;j<8;j++)c=(c&1)?0xedb88320^(c>>>1):c>>>1;t[i]=c;}
+  return t;
+})();
+function _crc32(data) {
+  let c=0xffffffff;
+  for(const b of data) c=_CRC_TABLE[(c^b)&0xff]^(c>>>8);
+  return (c^0xffffffff)>>>0;
+}
+function _buildZip(files) {
+  const enc=new TextEncoder(), parts=[], cd=[];
+  let off=0;
+  for(const {name,data} of files){
+    const nb=enc.encode(name), crc=_crc32(data), dl=data.length;
+    const lh=new DataView(new ArrayBuffer(30+nb.length));
+    lh.setUint32(0,0x04034b50,true);lh.setUint16(4,20,true);lh.setUint16(6,0,true);
+    lh.setUint16(8,0,true);lh.setUint16(10,0,true);lh.setUint16(12,0,true);
+    lh.setUint32(14,crc,true);lh.setUint32(18,dl,true);lh.setUint32(22,dl,true);
+    lh.setUint16(26,nb.length,true);lh.setUint16(28,0,true);
+    new Uint8Array(lh.buffer,30).set(nb);
+    const ce=new DataView(new ArrayBuffer(46+nb.length));
+    ce.setUint32(0,0x02014b50,true);ce.setUint16(4,20,true);ce.setUint16(6,20,true);
+    ce.setUint16(8,0,true);ce.setUint16(10,0,true);ce.setUint16(12,0,true);ce.setUint16(14,0,true);
+    ce.setUint32(16,crc,true);ce.setUint32(20,dl,true);ce.setUint32(24,dl,true);
+    ce.setUint16(28,nb.length,true);ce.setUint16(30,0,true);ce.setUint16(32,0,true);
+    ce.setUint16(34,0,true);ce.setUint16(36,0,true);ce.setUint32(38,0,true);
+    ce.setUint32(42,off,true);new Uint8Array(ce.buffer,46).set(nb);
+    parts.push(new Uint8Array(lh.buffer),data);
+    cd.push(new Uint8Array(ce.buffer));
+    off+=30+nb.length+dl;
+  }
+  const cdsz=cd.reduce((s,a)=>s+a.length,0);
+  const eocd=new DataView(new ArrayBuffer(22));
+  eocd.setUint32(0,0x06054b50,true);eocd.setUint16(4,0,true);eocd.setUint16(6,0,true);
+  eocd.setUint16(8,files.length,true);eocd.setUint16(10,files.length,true);
+  eocd.setUint32(12,cdsz,true);eocd.setUint32(16,off,true);eocd.setUint16(20,0,true);
+  const all=[...parts,...cd,new Uint8Array(eocd.buffer)];
+  const total=all.reduce((s,a)=>s+a.length,0);
+  const out=new Uint8Array(total); let p=0;
+  for(const a of all){out.set(a,p);p+=a.length;}
+  return out.buffer;
+}
+async function dlZip() {
+  const status=document.getElementById('dl-status');
+  status.textContent='⏳ ZIP wird erstellt…';
+  const files=[];
+  for(let i=0;i<57;i++){
+    if(!images[i]) continue;
+    const img=images[i];
+    const c=document.createElement('canvas');
+    c.width=img.width; c.height=img.height;
+    c.getContext('2d').drawImage(img,0,0);
+    const b64=c.toDataURL('image/png').split(',')[1];
+    const bytes=Uint8Array.from(atob(b64),ch=>ch.charCodeAt(0));
+    files.push({name:`symbols/symbol_${String(i+1).padStart(2,'0')}.png`, data:bytes});
+  }
+  const settingsBytes=new TextEncoder().encode(JSON.stringify(buildSettingsObj(),null,2));
+  files.push({name:'SPOT_IT-settings.json', data:settingsBytes});
+  triggerDownload(new Blob([_buildZip(files)],{type:'application/octet-stream'}),'SPOT_IT-export.dbl');
+  status.textContent=`✓ .dbl: ${files.length-1} Bilder + Settings exportiert`;
+  setTimeout(()=>status.textContent='',5000);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SAVE / LOAD SETTINGS JSON
+// ═══════════════════════════════════════════════════════════════
+function buildSettingsObj() {
+  return {
+    version: 2,
+    globalScale,
+    ringR,
+    bgColor:     document.getElementById('bg-color').value,
+    borderColor: document.getElementById('border-color').value,
+    symScale: Array.from(symScale),
+    symRot:   Array.from(symRot),
+    symLabel: Array.from(symLabel),
+    layouts:  layouts.map(l => ({
+      startAngle:  l.startAngle,
+      baseRot:     l.baseRot,
+      jitter:      l.jitter,
+      customPos:   l.customPos   ?? new Array(8).fill(null),
+      rotAdj:      l.rotAdj      ?? new Array(8).fill(0),
+      ringROffset: l.ringROffset ?? 0,
+      order:       l.order
+    }))
+  };
+}
+function saveSettings() {
+  const blob = new Blob([JSON.stringify(buildSettingsObj(), null, 2)], {type:'application/json'});
+  triggerDownload(blob, 'SPOT_IT-settings.json');
+}
+
+// shared settings applier (used by JSON file and ZIP)
+function _applySettings(obj) {
+      if (obj.version !== 1 && obj.version !== 2) { alert('Unbekanntes Settings-Format'); return; }
+
+      globalScale = obj.globalScale ?? 1.0;
+      document.getElementById('global-scale').value = Math.round(globalScale * 100);
+      document.getElementById('gs-val').textContent = globalScale.toFixed(1) + '×';
+
+      ringR = obj.ringR ?? 195;
+      document.getElementById('global-ring-r').value = ringR;
+      document.getElementById('gr-val').textContent = ringR;
+      document.getElementById('bg-color').value     = obj.bgColor     ?? '#ffffff';
+      document.getElementById('border-color').value = obj.borderColor ?? '#888888';
+
+      obj.symScale.forEach((v, i) => {
+        symScale[i] = v;
+        const sl = document.querySelectorAll('.ssl')[i];
+        if (sl) sl.value = Math.round(v * 100);
+        const lbl = document.getElementById(`sv${i}`);
+        if (lbl) lbl.textContent = v.toFixed(1) + '×';
+      });
+      obj.symRot.forEach((v, i) => {
+        symRot[i] = v;
+        const sl = document.querySelectorAll('.rsl')[i];
+        if (sl) sl.value = v;
+        const lbl = document.getElementById(`rv${i}`);
+        if (lbl) lbl.textContent = v + '°';
+      });
+      if (obj.symLabel) obj.symLabel.forEach((v, i) => {
+        symLabel[i] = v || '';
+        const inp = document.querySelectorAll('.sym-lbl-input')[i];
+        if (inp) inp.value = symLabel[i];
+      });
+      obj.layouts.forEach((l, i) => {
+        layouts[i] = { ...l,
+          customPos:   l.customPos   ?? new Array(8).fill(null),
+          rotAdj:      l.rotAdj      ?? new Array(8).fill(0),
+          ringROffset: l.ringROffset ?? 0 };
+      });
+
+
+      renderCard();
+}
+
+document.getElementById('settings-input').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const fr = new FileReader();
+  fr.onload = ev => {
+    try { _applySettings(JSON.parse(ev.target.result)); }
+    catch(err) { alert('Fehler beim Laden: ' + err.message); }
+  };
+  fr.readAsText(file);
+  e.target.value = '';
+});
+
+// ═══════════════════════════════════════════════════════════════
+// PRINT PAIR  –  2 Karten auf einem Foto-Querformat-Canvas
+// Foto 15x10 cm bei 300 dpi = 1772 x 1181 px
+// 2 Kreise à 700px nebeneinander, zentriert, mit weißem Rand
+// ═══════════════════════════════════════════════════════════════
+async function renderCardToCanvas(cardIdx) {
+  const offscreen = document.createElement('canvas');
+  offscreen.width = 700; offscreen.height = 700;
+  const oc = offscreen.getContext('2d');
+
+  const bgColor     = document.getElementById('bg-color').value;
+  const borderColor = document.getElementById('border-color').value;
+  const card   = SPOT_IT[cardIdx];
+  const layout = layouts[cardIdx];
+
+  oc.save();
+  oc.beginPath();
+  oc.arc(350, 350, 320, 0, Math.PI * 2);
+  oc.fillStyle = bgColor;
+  oc.fill();
+  oc.clip();
+
+  const positions = computePositions(card, layout);
+
+  for (let pos = 0; pos < 8; pos++) {
+    const symIdx   = card[layout.order[pos]];
+    const img      = images[symIdx];
+    const sz       = BASE_SZ * globalScale * symScale[symIdx];
+    const rot      = layout.baseRot[pos] + (symRot[symIdx] + (layout.rotAdj?.[pos] ?? 0)) * Math.PI / 180;
+    const [px, py] = positions[pos];
+    oc.save();
+    oc.translate(px, py);
+    oc.rotate(rot);
+    if (img) {
+      oc.drawImage(img, -sz/2, -sz/2, sz, sz);
+    } else {
+      const hue = (symIdx * 47) % 360;
+      oc.beginPath(); oc.arc(0,0,sz/2,0,Math.PI*2);
+      oc.fillStyle = `hsl(${hue},40%,88%)`; oc.fill();
+      oc.strokeStyle = `hsl(${hue},40%,60%)`; oc.lineWidth=2; oc.stroke();
+      oc.fillStyle = `hsl(${hue},40%,35%)`;
+      oc.font = `bold ${Math.round(sz*.33)}px sans-serif`;
+      oc.textAlign='center'; oc.textBaseline='middle';
+      oc.fillText(symIdx+1, 0, 0);
+    }
+    oc.restore();
+  }
+
+  oc.restore();
+  oc.beginPath();
+  oc.arc(350, 350, 320, 0, Math.PI * 2);
+  oc.strokeStyle = borderColor; oc.lineWidth = 3; oc.stroke();
+  return offscreen;
+}
+
+async function dlPair() {
+  const idxA = currentCard;
+  const idxB = (idxA === N_CARD - 1) ? null : idxA + 1;
+  await renderAndDownloadPair(idxA, idxB);
+}
+
+async function dlAllPairs() {
+  const status = document.getElementById('dl-status');
+  const total  = Math.ceil(N_CARD / 2);
+  for (let p = 0; p < total; p++) {
+    const idxA = p * 2;
+    const idxB = (idxA + 1 < N_CARD) ? idxA + 1 : null;  // last: branding instead of duplicate
+    status.textContent = `⏳ Exportiere Paar ${p+1} / ${total}…`;
+    await renderAndDownloadPair(idxA, idxB);
+    await new Promise(r => setTimeout(r, 300));
+  }
+  status.textContent = `✓ Alle ${total} Karten-Seiten exportiert (Seite ${total} = Karte 55 + Branding)`;
+  setTimeout(() => status.textContent = '', 8000);
+}
+
+async function renderBrandingPage() {
+  // Photo size 15x10 cm at 300 dpi — Seite 56: Impressum / Lizenzhinweis
+  const PW = 1772, PH = 1181;
+  const page = document.createElement('canvas');
+  page.width = PW; page.height = PH;
+  const pc = page.getContext('2d');
+  pc.fillStyle = '#ffffff';
+  pc.fillRect(0, 0, PW, PH);
+  const cx = PW / 2, cy = PH / 2;
+  pc.save();
+  pc.textAlign = 'center';
+  pc.textBaseline = 'alphabetic';
+  // Große Biene
+  pc.font = '220px sans-serif';
+  pc.fillText('\uD83D\uDC1D', cx, cy - 60);
+  // Lizenztext
+  pc.fillStyle = '#222222';
+  pc.font = 'bold 42px sans-serif';
+  pc.fillText('created with a private License', cx, cy + 115);
+  pc.font = '36px sans-serif';
+  pc.fillText('Holger Specht, Bad Abbach', cx, cy + 166);
+  pc.restore();
+  await new Promise(resolve => page.toBlob(blob => {
+    triggerDownload(blob, 'SPOT_IT-print-56-branding.png');
+    resolve();
+  }, 'image/png'));
+}
+
+async function renderAndDownloadPair(idxA, idxB) {
+  // Photo size 15x10 cm at 300 dpi = 1772 x 1181 px
+  const PW = 1772, PH = 1181;
+  const MARGIN = 59;   // 5 mm @ 300 dpi
+  const GAP    = 10;   // minimal gap between the two cards
+  const DIAM   = Math.min(Math.floor((PW - 2*MARGIN - GAP) / 2), PH - 2*MARGIN); // 822
+  const offX   = MARGIN;
+  const offY   = Math.round((PH - DIAM) / 2);
+
+  const pair = document.createElement('canvas');
+  pair.width = PW; pair.height = PH;
+  const pc = pair.getContext('2d');
+  pc.fillStyle = '#ffffff';
+  pc.fillRect(0, 0, PW, PH);
+
+  const cA = await renderCardToCanvas(idxA);
+  pc.drawImage(cA, offX, offY, DIAM, DIAM);
+
+  if (idxB !== null) {
+    const cB = await renderCardToCanvas(idxB);
+    pc.drawImage(cB, offX + DIAM + GAP, offY, DIAM, DIAM);
+  } else {
+    _drawBrandingCircle(pc, offX + DIAM + GAP, offY, DIAM);
+  }
+
+  // ── Branding – top-right corner (above cards in white margin) ──
+  {
+    const bx = PW - 22, by = 22;
+    pc.save();
+    pc.textAlign = 'right';
+    pc.textBaseline = 'top';
+    pc.font = '68px sans-serif';
+    pc.fillStyle = '#000';
+    pc.fillText('\uD83D\uDC1D', bx, by);
+    pc.font = 'bold 27px system-ui,sans-serif';
+    pc.fillStyle = '#111';
+    pc.fillText('Holger Specht', bx, by + 76);
+    pc.font = '21px system-ui,sans-serif';
+    pc.fillStyle = '#555';
+    pc.fillText('Bad Abbach', bx, by + 108);
+    pc.strokeStyle = '#ccc'; pc.lineWidth = 1;
+    pc.beginPath(); pc.moveTo(bx - 265, by + 136); pc.lineTo(bx, by + 136); pc.stroke();
+    pc.font = '17px system-ui,sans-serif';
+    pc.fillStyle = '#999';
+    pc.fillText('Private License', bx, by + 141);
+    pc.restore();
+  }
+
+  const nameB = (idxB === null) ? 'branding' : String(idxB+1).padStart(2,'0');
+  await new Promise(resolve => pair.toBlob(blob => {
+    triggerDownload(blob, `SPOT_IT-print-${String(idxA+1).padStart(2,'0')}-${nameB}.png`);
+    resolve();
+  }, 'image/png'));
+}
+
+// ── Canvas mouse handlers (drag & drop) ──
+canvas.addEventListener('mousedown', e => {
+  if (e.button !== 0) return;
+  const {x, y} = canvasCoords(e);
+  const hit = hitTestCard(x, y);
+  if (hit >= 0) {
+    selectedPos = hit;
+    dragActive  = true;
+    dragMoved   = false;
+    renderCard();
+    e.preventDefault();
+  } else {
+    selectedPos = -1;
+    renderCard();
+  }
+});
+
+canvas.addEventListener('mousemove', e => {
+  const {x, y} = canvasCoords(e);
+  if (dragActive && selectedPos >= 0) {
+    if (!dragMoved) {
+      pushUndo(currentCard);
+      dragMoved = true;
+    }
+    const layout = layouts[currentCard];
+    if (!layout.customPos) layout.customPos = new Array(8).fill(null);
+    layout.customPos[selectedPos] = [x, y];
+    canvas.style.cursor = 'grabbing';
+    renderCard();
+  } else {
+    canvas.style.cursor = hitTestCard(x, y) >= 0 ? 'grab' : 'default';
+  }
+});
+
+canvas.addEventListener('mouseup', () => {
+  if (dragActive && !dragMoved && selectedPos >= 0) {
+    // pure click (no drag) → scroll gallery to that symbol
+    const card   = SPOT_IT[currentCard];
+    const layout = layouts[currentCard];
+    const symIdx = card[layout.order[selectedPos]];
+    document.getElementById(`row${symIdx}`)
+      ?.scrollIntoView({behavior:'smooth', block:'nearest'});
+  }
+  dragActive = false;
+});
+canvas.addEventListener('mouseleave', () => { dragActive = false; });
+
+canvas.addEventListener('dblclick', e => {
+  const {x, y} = canvasCoords(e);
+  const hit = hitTestCard(x, y);
+  if (hit >= 0) {
+    pushUndo(currentCard);
+    const layout = layouts[currentCard];
+    if (!layout.customPos) layout.customPos = new Array(8).fill(null);
+    layout.customPos[hit] = null;  // reset to ring position
+    selectedPos = hit;
+    renderCard();
+  }
+});
+
+canvas.addEventListener('mousedown', e => {
+  if (e.button !== 0) return;
+  const {x, y} = canvasCoords(e);
+  const hit = hitTestCard(x, y);
+  if (hit >= 0) {
+    selectedPos = hit;
+    dragActive  = true;
+    dragMoved   = false;
+    renderCard();
+    e.preventDefault();
+  } else {
+    selectedPos = -1;
+    renderCard();
+  }
+});
+
+canvas.addEventListener('mousemove', e => {
+  const {x, y} = canvasCoords(e);
+  if (dragActive && selectedPos >= 0) {
+    if (!dragMoved) {
+      pushUndo(currentCard);
+      dragMoved = true;
+    }
+    const layout = layouts[currentCard];
+    if (!layout.customPos) layout.customPos = new Array(8).fill(null);
+    layout.customPos[selectedPos] = [x, y];
+    canvas.style.cursor = 'grabbing';
+    renderCard();
+  } else {
+    canvas.style.cursor = hitTestCard(x, y) >= 0 ? 'grab' : 'default';
+  }
+});
+
+canvas.addEventListener('mouseup', () => {
+  if (dragActive && !dragMoved && selectedPos >= 0) {
+    // pure click (no drag) → scroll gallery to that symbol
+    const card   = SPOT_IT[currentCard];
+    const layout = layouts[currentCard];
+    const symIdx = card[layout.order[selectedPos]];
+    document.getElementById(`row${symIdx}`)
+      ?.scrollIntoView({behavior:'smooth', block:'nearest'});
+  }
+  dragActive = false;
+});
+canvas.addEventListener('mouseleave', () => { dragActive = false; });
+
+canvas.addEventListener('dblclick', e => {
+  const {x, y} = canvasCoords(e);
+  const hit = hitTestCard(x, y);
+  if (hit >= 0) {
+    pushUndo(currentCard);
+    const layout = layouts[currentCard];
+    if (!layout.customPos) layout.customPos = new Array(8).fill(null);
+    layout.customPos[hit] = null;  // reset to ring position
+    selectedPos = hit;
+    renderCard();
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// TOUCH GESTURES  (1 finger = drag, 2 finger = pinch/rotate)
+// ═══════════════════════════════════════════════════════════════
+let touchState = null;  // null | {mode:'drag'|'gesture', ...}
+
+function touchPoint(t) {
+  const r = canvas.getBoundingClientRect();
+  return { x: (t.clientX - r.left) * CW / r.width,
+           y: (t.clientY - r.top)  * CH / r.height };
+}
+function midpoint(a, b) { return { x:(a.x+b.x)/2, y:(a.y+b.y)/2 }; }
+function dist(a, b)     { return Math.hypot(a.x-b.x, a.y-b.y); }
+function angle(a, b)    { return Math.atan2(b.y-a.y, b.x-a.x); }
+
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  if (e.touches.length === 1) {
+    const p   = touchPoint(e.touches[0]);
+    const hit = hitTestCard(p.x, p.y);
+    selectedPos = hit;
+    dragMoved   = false;
+    touchState  = { mode: 'drag', last: p };
+    renderCard();
+  } else if (e.touches.length === 2) {
+    const a = touchPoint(e.touches[0]);
+    const b = touchPoint(e.touches[1]);
+    if (selectedPos < 0) {
+      // no symbol selected → try to select one under midpoint
+      const m   = midpoint(a, b);
+      const hit = hitTestCard(m.x, m.y);
+      if (hit >= 0) selectedPos = hit;
+    }
+    touchState = {
+      mode:      'gesture',
+      initDist:  dist(a, b),
+      initAngle: angle(a, b),
+      initScale: selectedPos >= 0
+        ? symScale[SPOT_IT[currentCard][layouts[currentCard].order[selectedPos]]]
+        : null,
+      initRot: selectedPos >= 0
+        ? (layouts[currentCard].rotAdj?.[selectedPos] ?? 0)
+        : null,
+      undoDone: false
+    };
+    renderCard();
+  }
+}, { passive: false });
+
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if (!touchState) return;
+
+  if (touchState.mode === 'drag' && e.touches.length === 1 && selectedPos >= 0) {
+    const p = touchPoint(e.touches[0]);
+    if (!touchState.undoDone) { pushUndo(currentCard); touchState.undoDone = true; }
+    const layout = layouts[currentCard];
+    if (!layout.customPos) layout.customPos = new Array(8).fill(null);
+    layout.customPos[selectedPos] = [p.x, p.y];
+    dragMoved = true;
+    touchState.last = p;
+    renderCard();
+
+  } else if (touchState.mode === 'gesture' && e.touches.length === 2 && selectedPos >= 0) {
+    const a = touchPoint(e.touches[0]);
+    const b = touchPoint(e.touches[1]);
+    const card   = SPOT_IT[currentCard];
+    const layout = layouts[currentCard];
+    const symIdx = card[layout.order[selectedPos]];
+
+    if (!touchState.undoDone) { pushUndo(currentCard); touchState.undoDone = true; }
+
+    // Scale
+    const scaleFactor = dist(a, b) / touchState.initDist;
+    const newScale = Math.min(2.6, Math.max(0.3, touchState.initScale * scaleFactor));
+    symScale[symIdx] = newScale;
+    syncScaleSlider(symIdx);
+
+    // Rotate (per-card)
+    const dAngle = angle(a, b) - touchState.initAngle;
+    const newRot = touchState.initRot + dAngle * 180 / Math.PI;
+    if (!layout.rotAdj) layout.rotAdj = new Array(8).fill(0);
+    layout.rotAdj[selectedPos] = Math.round(newRot * 10) / 10;
+
+    renderCard();
+  }
+}, { passive: false });
+
+canvas.addEventListener('touchend', e => {
+  e.preventDefault();
+  if (touchState?.mode === 'drag' && !dragMoved && selectedPos >= 0) {
+    // tap → scroll gallery
+    const card   = SPOT_IT[currentCard];
+    const layout = layouts[currentCard];
+    const symIdx = card[layout.order[selectedPos]];
+    document.getElementById(`row${symIdx}`)
+      ?.scrollIntoView({behavior:'smooth', block:'nearest'});
+  }
+  if (e.touches.length === 0) touchState = null;
+}, { passive: false });
+
+// Card number direct input
+document.getElementById('card-direct').addEventListener('change', e => {
+  gotoCard(+e.target.value - 1);
+});
+document.getElementById('card-direct').addEventListener('keydown', e => e.stopPropagation());
+
+// ── Brand badge drag ──
+{
+  const badge = document.getElementById('brand-badge');
+  let bdrag = null;
+  badge.addEventListener('mousedown', e => {
+    e.stopPropagation();
+    const r = badge.parentElement.getBoundingClientRect();
+    const br = badge.getBoundingClientRect();
+    bdrag = { dx: e.clientX - br.left + r.left, dy: e.clientY - br.top + r.top };
+    badge.style.cursor = 'grabbing';
+    badge.style.right = 'auto';
+    badge.style.left  = (br.left - r.left) + 'px';
+    badge.style.top   = (br.top  - r.top)  + 'px';
+  });
+  document.addEventListener('mousemove', e => {
+    if (!bdrag) return;
+    const r = badge.parentElement.getBoundingClientRect();
+    badge.style.left = (e.clientX - bdrag.dx) + 'px';
+    badge.style.top  = (e.clientY - bdrag.dy) + 'px';
+  });
+  document.addEventListener('mouseup', () => {
+    if (bdrag) { badge.style.cursor = 'grab'; bdrag = null; }
+  });
+  // Touch
+  badge.addEventListener('touchstart', e => {
+    e.stopPropagation();
+    const t = e.touches[0];
+    const r = badge.parentElement.getBoundingClientRect();
+    const br = badge.getBoundingClientRect();
+    badge.style.right = 'auto';
+    badge.style.left  = (br.left - r.left) + 'px';
+    badge.style.top   = (br.top  - r.top)  + 'px';
+    bdrag = { dx: t.clientX - br.left + r.left, dy: t.clientY - br.top + r.top };
+  }, { passive: true });
+  badge.addEventListener('touchmove', e => {
+    if (!bdrag) return;
+    e.stopPropagation();
+    const t = e.touches[0];
+    badge.style.left = (t.clientX - bdrag.dx) + 'px';
+    badge.style.top  = (t.clientY - bdrag.dy) + 'px';
+  }, { passive: true });
+  badge.addEventListener('touchend', () => { bdrag = null; });
+}
+
+// ── Gallery collapse ──
+function toggleGallery() {
+  const panel = document.getElementById('gallery-panel');
+  const btn   = document.getElementById('gallery-toggle');
+  const open  = panel.classList.toggle('collapsed');
+  btn.textContent = open ? '▶' : '◀';
+  btn.classList.toggle('open', !open);
+  btn.style.left = open ? '0' : '300px';
+}
+
+// ── Initial render ──
+renderCard();
+
+// ── SharePoint detection ──
+if (location.protocol !== 'file:') {
+  document.getElementById('modal-overlay').classList.add('show');
+}
+</script>
+</body>
+</html>
