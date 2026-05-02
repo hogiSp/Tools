@@ -1,7 +1,7 @@
 ﻿<!DOCTYPE html>
 <html lang="de"><head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Spot-It Card Generator</title>
 <!-- PWA -->
 <link rel="manifest" href="manifest.json">
@@ -23,7 +23,7 @@
 body{font-family:system-ui,sans-serif;background:#e8ecef;display:flex;flex-direction:column;height:100vh;overflow:hidden}
 
 /* ── HEADER ── */
-header{background:#1a252f;color:#fff;padding:8px 16px 6px;display:flex;flex-direction:column;gap:5px;flex-shrink:0;max-height:120px;overflow:hidden;transition:max-height .28s ease,padding .28s ease}
+header{background:#1a252f;color:#fff;padding:8px 16px 6px;display:flex;flex-direction:column;gap:5px;flex-shrink:0}
 .hrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .hrow-sep{width:1px;height:22px;background:rgba(255,255,255,.18);flex-shrink:0;margin:0 2px}
 header h1{font-size:1.05rem;white-space:nowrap;margin-right:4px}
@@ -69,8 +69,8 @@ main{flex:1;display:flex;overflow:hidden}
 .jog-lbl{font-size:11px;color:#bdc3c7;text-align:center;white-space:nowrap}
 #card-slider{width:min(400px,90%)}
 #card-canvas{
-  width: min(640px, calc(100vw - 90px), calc(100vh - 210px));
-  height: min(640px, calc(100vw - 90px), calc(100vh - 210px));
+  width: min(640px, calc(100vh - 210px));
+  height: min(640px, calc(100vh - 210px));
   border-radius:0;
   box-shadow:0 6px 28px rgba(0,0,0,.28);
   background:#fff;
@@ -214,48 +214,6 @@ main{position:relative}
 .lbl-txt-cell textarea:focus,.lbl-txt-cell.lbl-txt-active textarea{border-color:#3498db;background:#111f2e}
 #lbl-close-btn{margin-left:auto;background:rgba(231,76,60,.15);color:#e74c3c;border:1px solid rgba(231,76,60,.3);border-radius:7px;padding:6px 16px;font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0}
 #lbl-close-btn:hover{background:rgba(231,76,60,.35)}
-
-/* ── HEADER COLLAPSE ── */
-#header-wrap{flex-shrink:0;display:flex;flex-direction:column}
-header.collapsed{max-height:0!important;padding-top:0!important;padding-bottom:0!important}
-#header-tab{background:#152230;color:#4a6070;font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;text-align:center;cursor:pointer;padding:2px 0 3px;border-bottom:1px solid #1e3347;user-select:none;flex-shrink:0}
-#header-tab:hover{color:#bdc3c7}
-
-/* ── RIGHT ACTIONS DRAWER ── */
-.actions-panel{width:56px;min-width:56px;background:#1a252f;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:12px 8px;flex-shrink:0;transition:width .22s ease,min-width .22s ease;overflow:hidden;border-left:2px solid #243544}
-.actions-panel.collapsed{width:0!important;min-width:0!important;border-left:none}
-.actions-toggle{position:absolute;right:0;top:50%;transform:translateY(-50%);z-index:10;background:#1a252f;color:#fff;border:none;border-radius:6px 0 0 6px;padding:10px 5px;cursor:pointer;font-size:13px;transition:right .22s ease}
-.actions-toggle.open{right:56px}
-.act-btn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:10px;color:#bdc3c7;cursor:pointer;font-size:18px;width:40px;height:40px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;transition:background .12s,color .12s;flex-shrink:0;padding:4px}
-.act-btn:hover{background:rgba(255,255,255,.15);color:#fff}
-.act-ico{font-size:17px;line-height:1}
-.act-lbl{font-size:7.5px;color:#4a6070;letter-spacing:.2px;line-height:1;text-align:center;white-space:nowrap}
-.act-btn:hover .act-lbl{color:#8ab}
-.act-btn.act-play{background:rgba(22,160,133,.18);border-color:#16a085;color:#1abc9c}
-.act-btn.act-play:hover{background:rgba(22,160,133,.35)}
-.act-btn.act-lbl-btn{background:rgba(142,68,173,.18);border-color:#8e44ad;color:#c39bd3}
-.act-btn.act-lbl-btn:hover{background:rgba(142,68,173,.35)}
-
-/* ── 2P PLAY MODE ── */
-.play-mode-btn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#bdc3c7;padding:4px 9px;cursor:pointer;font-size:11px;font-weight:700;white-space:nowrap}
-.play-mode-btn.active{background:rgba(155,89,182,.3);border-color:#9b59b6;color:#d7bde2}
-#play-score-2p{display:none!important}
-#play-score-2p.show{display:flex!important}
-.play-p1-tag{color:#3498db;font-weight:800;font-size:12px}
-.play-p2-tag{color:#e74c3c;font-weight:800;font-size:12px}
-
-/* ── MOBILE ── */
-@media(max-width:600px){
-  .jog-wheel{height:200px}
-  .brand-badge{display:none}
-  .card-area{padding:8px;gap:6px}
-  header{padding:5px 10px 4px}
-  .hbtn{padding:5px 9px;font-size:11px}
-  .shape-btn{padding:3px 7px;font-size:11px}
-  .actions-toggle.open{right:56px}
-  .canvas-jog-row{gap:8px}
-  .jog-wheel{width:40px}
-}
 </style>
 </head>
 <body>
@@ -373,13 +331,7 @@ header.collapsed{max-height:0!important;padding-top:0!important;padding-bottom:0
   <div id="play-hud">
     <div id="play-hud-bar">
       <span class="play-title">🎴 Spot-It Play</span>
-      <div class="play-score" id="play-score-1p">✅ <span id="play-correct">0</span> &nbsp; ❌ <span id="play-wrong">0</span></div>
-      <div class="play-score" id="play-score-2p">
-        <span class="play-p1-tag">P1</span>&nbsp;<span id="play-p1-score">0</span>
-        &nbsp;vs&nbsp;
-        <span id="play-p2-score">0</span>&nbsp;<span class="play-p2-tag">P2</span>
-      </div>
-      <button class="play-mode-btn" id="play-mode-btn" onclick="togglePlayMode()" title="Switch Solo / 2-Player">👤 Solo</button>
+      <div class="play-score">✅ <span id="play-correct">0</span> &nbsp; ❌ <span id="play-wrong">0</span></div>
       <label class="play-lbl-toggle">
         <input type="checkbox" id="play-label-mode"> 🔤 Labels
       </label>
@@ -389,9 +341,9 @@ header.collapsed{max-height:0!important;padding-top:0!important;padding-bottom:0
   </div>
   <div class="play-cards">
     <div class="play-card-wrap">
-      <div class="play-label" id="play-left-label">Symbols</div>
+      <div class="play-label">Symbols</div>
       <canvas id="play-canvas-left" width="700" height="700"></canvas>
-      <div class="play-hint" id="play-left-hint">Tap the matching symbol</div>
+      <div class="play-hint">Tap the matching symbol</div>
     </div>
     <div style="font-size:28px;color:#2e4050;flex-shrink:0">⚡</div>
     <div class="play-card-wrap">
@@ -437,11 +389,10 @@ header.collapsed{max-height:0!important;padding-top:0!important;padding-bottom:0
   </div>
 </div>
 
-<div id="header-wrap">
-<header id="main-header">
+<header>
   <div class="hrow">
     <h1>&#x1F3B4; Spot-It Card Generator</h1>
-    <span style="font-size:10px;font-weight:700;color:#fff;background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.22);border-radius:5px;padding:2px 7px;letter-spacing:.4px;white-space:nowrap;flex-shrink:0">v 1.17</span>
+    <span style="font-size:10px;font-weight:700;color:#fff;background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.22);border-radius:5px;padding:2px 7px;letter-spacing:.4px;white-space:nowrap;flex-shrink:0">v 1.16</span>
     <div class="hrow-sep"></div>
     <button class="hbtn" style="background:linear-gradient(135deg,#16a085,#1abc9c);font-size:13px;padding:7px 16px" onclick="openIC()">&#x1F4E5; Import</button>
     <button class="hbtn" style="background:linear-gradient(135deg,#e67e22,#f39c12);font-size:13px;padding:7px 16px" onclick="openEC()">&#x1F4E4; Export</button>
@@ -468,8 +419,6 @@ header.collapsed{max-height:0!important;padding-top:0!important;padding-bottom:0
     <span id="progress">0 / 57 images loaded</span>
   </div>
 </header>
-<div id="header-tab" onclick="toggleHeader()" title="Show / hide settings">&#x25B2; Settings</div>
-</div>
 
 <main>
   <!-- gallery collapse toggle -->
@@ -541,6 +490,14 @@ header.collapsed{max-height:0!important;padding-top:0!important;padding-bottom:0
       <span id="crr-val" style="font-size:11px;color:#555;min-width:28px">0</span>
     </div>
 
+    <div class="actions" style="justify-content:space-between">
+      <div style="display:flex;gap:8px;align-items:center">
+            <button class="btn btn-rand"     onclick="randomizeCurrent()">&#x1F500; Shuffle (this card)</button>
+        <button class="btn btn-rand-all" onclick="randomizeAll()">&#x1F500; Shuffle all</button>
+        <button class="btn" style="background:#16a085;color:#fff" onclick="openPlay()">▶ Play</button>
+        <button class="btn" style="background:#8e44ad;color:#fff" onclick="openLblEditor()">🏷 Labels</button>
+      </div>
+    </div>
     <div id="dl-status"></div>
     <details style="font-size:11px;color:#888;text-align:center;max-width:600px;cursor:pointer;margin-top:2px">
       <summary style="color:#aaa;user-select:none">&#9000; Keyboard shortcuts</summary>
@@ -559,24 +516,6 @@ header.collapsed{max-height:0!important;padding-top:0!important;padding-bottom:0
       </div>
     </details>
   </div>
-
-  <!-- ── RIGHT: Actions drawer ── -->
-  <div class="actions-panel collapsed" id="actions-panel">
-    <button class="act-btn" onclick="randomizeCurrent()" title="Shuffle this card">
-      <span class="act-ico">&#x1F500;</span><span class="act-lbl">1 card</span>
-    </button>
-    <button class="act-btn" onclick="randomizeAll()" title="Shuffle all cards">
-      <span class="act-ico">&#x1F500;</span><span class="act-lbl">ALL</span>
-    </button>
-    <button class="act-btn act-play" onclick="openPlay()" title="Play mode">
-      <span class="act-ico">&#x25B6;</span><span class="act-lbl">Play</span>
-    </button>
-    <button class="act-btn act-lbl-btn" onclick="openLblEditor()" title="Label Editor">
-      <span class="act-ico">&#x1F3F7;</span><span class="act-lbl">Labels</span>
-    </button>
-  </div>
-  <button class="actions-toggle" id="actions-toggle" onclick="toggleActions()" title="Actions">&#x25C0;</button>
-
 </main>
 
 <script>
@@ -729,9 +668,6 @@ let playCorrect   = 0;
 let playWrong     = 0;
 // The shared symbol between left and right card
 let playMatchSym  = -1;
-let playTwoPlayer = false;
-let play1Score    = 0;
-let play2Score    = 0;
 
 const playCanvasL = document.getElementById('play-canvas-left');
 const playCanvasR = document.getElementById('play-canvas-right');
@@ -961,19 +897,13 @@ playCanvasL.addEventListener('click', e => {
   if (!playActive) return;
   const {x,y} = _playCanvasCoords(playCanvasL, e);
   const sym = _playHitTest(playCardLeft, x, y);
-  if (sym >= 0) {
-    if (playTwoPlayer) _playCheckSym2P(sym, 'left');
-    else _playCheckSym(sym);
-  }
+  if (sym >= 0) _playCheckSym(sym);
 });
 playCanvasR.addEventListener('click', e => {
   if (!playActive) return;
   const {x,y} = _playCanvasCoords(playCanvasR, e);
   const sym = _playHitTest(playCardRight, x, y);
-  if (sym >= 0) {
-    if (playTwoPlayer) _playCheckSym2P(sym, 'right');
-    else _playCheckSym(sym);
-  }
+  if (sym >= 0) _playCheckSym(sym);
 });
 document.getElementById('play-label-mode').addEventListener('change', () => {
   if (playActive) _playRenderBoth();
@@ -997,11 +927,8 @@ function _playResizeCards() {
 function openPlay() {
   playActive = true;
   playCorrect = 0; playWrong = 0;
-  play1Score = 0; play2Score = 0;
   document.getElementById('play-correct').textContent = '0';
   document.getElementById('play-wrong').textContent = '0';
-  document.getElementById('play-p1-score').textContent = '0';
-  document.getElementById('play-p2-score').textContent = '0';
   document.getElementById('play-result').textContent = '';
   document.getElementById('play-hud').classList.remove('collapsed');
   document.getElementById('play-hud-tab').textContent = '▲';
@@ -2027,100 +1954,6 @@ function navigate(d) { gotoCard(currentCard + d); }
 
 // Resize play canvases when window changes while play is open
 window.addEventListener('resize', () => { if (playActive) _playResizeCards(); });
-
-// ── TOGGLE HEADER ──
-function toggleHeader() {
-  const h = document.getElementById('main-header');
-  const t = document.getElementById('header-tab');
-  h.classList.toggle('collapsed');
-  t.innerHTML = h.classList.contains('collapsed') ? '▼ Settings' : '▲ Settings';
-}
-
-// ── TOGGLE ACTIONS DRAWER ──
-function toggleActions() {
-  const p = document.getElementById('actions-panel');
-  const t = document.getElementById('actions-toggle');
-  p.classList.toggle('collapsed');
-  const open = !p.classList.contains('collapsed');
-  t.classList.toggle('open', open);
-  t.innerHTML = open ? '▶' : '◀';
-}
-
-// ── TOGGLE 2-PLAYER MODE ──
-function togglePlayMode() {
-  playTwoPlayer = !playTwoPlayer;
-  const btn  = document.getElementById('play-mode-btn');
-  const s1p  = document.getElementById('play-score-1p');
-  const s2p  = document.getElementById('play-score-2p');
-  const lblL = document.getElementById('play-left-label');
-  const lblR = document.getElementById('play-right-label');
-  const hntL = document.getElementById('play-left-hint');
-  const hntR = document.getElementById('play-right-hint');
-  play1Score = 0; play2Score = 0;
-  document.getElementById('play-p1-score').textContent = '0';
-  document.getElementById('play-p2-score').textContent = '0';
-  if (playTwoPlayer) {
-    btn.textContent = '👥 2P'; btn.classList.add('active');
-    s1p.classList.remove('show'); s1p.style.display = 'none';
-    s2p.classList.add('show');
-    if (lblL) lblL.textContent = '← Player 1';
-    if (lblR) lblR.textContent = 'Player 2 →';
-    if (hntL) hntL.textContent = 'Tap match on YOUR card';
-    if (hntR) hntR.textContent = 'Tap match on YOUR card';
-  } else {
-    btn.textContent = '👤 Solo'; btn.classList.remove('active');
-    s1p.style.display = ''; s1p.classList.add('show');
-    s2p.classList.remove('show');
-    if (lblL) lblL.textContent = 'Symbols';
-    if (lblR) lblR.textContent = 'Symbols';
-    if (hntL) hntL.textContent = 'Tap the matching symbol';
-    if (hntR) hntR.textContent = 'Click the match here';
-  }
-}
-
-// ── 2-PLAYER CHECK ──
-function _playCheckSym2P(clickedSym, side) {
-  const res = document.getElementById('play-result');
-  res.className = ''; res.innerHTML = '';
-  if (clickedSym !== playMatchSym) {
-    // Wrong tap
-    res.textContent = '❌';
-    res.className = 'wrong';
-    _playDrawMatchHalo(side === 'left' ? playCtxL : playCtxR,
-                       side === 'left' ? playCardLeft : playCardRight, '#e74c3c');
-    setTimeout(() => { res.innerHTML = ''; res.className = ''; }, 900);
-    return;
-  }
-  // Correct!
-  _playDrawMatchHalo(playCtxL, playCardLeft, '#2ecc71');
-  _playDrawMatchHalo(playCtxR, playCardRight, '#2ecc71');
-  if (side === 'left') {
-    play1Score++;
-    document.getElementById('play-p1-score').textContent = play1Score;
-    res.textContent = '⬅✅';  // P1 takes P2’s card
-    const taken = playCardRight;
-    let fresh;
-    do { fresh = Math.floor(Math.random() * N_CARD); } while (fresh === taken);
-    playCardLeft  = taken;
-    playCardRight = fresh;
-  } else {
-    play2Score++;
-    document.getElementById('play-p2-score').textContent = play2Score;
-    res.textContent = '✅➡';  // P2 takes P1’s card
-    const taken = playCardLeft;
-    let fresh;
-    do { fresh = Math.floor(Math.random() * N_CARD); } while (fresh === taken);
-    playCardRight = taken;
-    playCardLeft  = fresh;
-  }
-  res.className = 'correct';
-  const setL = new Set(SPOT_IT[playCardLeft]);
-  playMatchSym = SPOT_IT[playCardRight].find(s => setL.has(s));
-  setTimeout(() => {
-    res.innerHTML = ''; res.className = '';
-    _playRenderBoth();
-  }, 700);
-}
 
 // Keyboard navigation
 document.addEventListener('keydown', e => {
