@@ -836,15 +836,23 @@ function _playRenderBoth() {
     playCanvasR.classList.remove('label-mode');
     document.getElementById('play-labels-card').classList.remove('show');
     document.getElementById('play-labels-card').innerHTML = '';
-    document.getElementById('play-right-label').textContent = 'Beschriftungen';
-    document.getElementById('play-right-hint').textContent = 'Klicke das passende Wort';
+    if (!playTwoPlayer) {
+      document.getElementById('play-left-label').textContent  = 'Symbols';
+      document.getElementById('play-right-label').textContent = 'Labels';
+      document.getElementById('play-left-hint').textContent   = 'Tap the matching symbol';
+      document.getElementById('play-right-hint').textContent  = 'Click the matching word';
+    }
   } else {
     _playRenderCard(playCtxR, playCardRight, false);
     playCanvasR.classList.remove('label-mode');
     document.getElementById('play-labels-card').classList.remove('show');
     document.getElementById('play-labels-card').innerHTML = '';
-    document.getElementById('play-right-label').textContent = 'Symbole';
-    document.getElementById('play-right-hint').textContent = 'Klicke hier auf das gleiche';
+    if (!playTwoPlayer) {
+      document.getElementById('play-left-label').textContent  = 'Symbols';
+      document.getElementById('play-right-label').textContent = 'Symbols';
+      document.getElementById('play-left-hint').textContent   = 'Tap the matching symbol';
+      document.getElementById('play-right-hint').textContent  = 'Click the match here';
+    }
   }
 }
 
