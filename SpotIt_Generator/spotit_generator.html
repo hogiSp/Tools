@@ -2486,7 +2486,7 @@ async function dlAllPairsZip() {
 }
 
 async function _renderPairCanvas(idxA, idxB) {
-  const PW = 1861, PH = 1240;
+  const PW = 1861, PH = 1302;
   const MARGIN = 20;
   const DIAM   = 900;
   const GAP    = -69;
@@ -2540,7 +2540,7 @@ function _drawBrandingCircle(pc, x, y, diam) {
 }
 
 async function _renderBrandingCanvas() {
-  const PW = 1861, PH = 1240;
+  const PW = 1861, PH = 1302;
   const page = document.createElement('canvas');
   page.width = PW; page.height = PH;
   const pc = page.getContext('2d');
@@ -2780,8 +2780,8 @@ async function dlAllPairs() {
 }
 
 async function renderBrandingPage() {
-  // Canvas +5%: 1772→1861, 1181→1240 (cards stay at same position, more bleed)
-  const PW = 1861, PH = 1240;
+  // Canvas +5%: 1772→1861, 1181→1302
+  const PW = 1861, PH = 1302;
   const page = document.createElement('canvas');
   page.width = PW; page.height = PH;
   const pc = page.getContext('2d');
@@ -2809,7 +2809,7 @@ async function renderBrandingPage() {
 
 async function renderAndDownloadPair(idxA, idxB) {
   // Canvas +5%: 1772→1861, 1181→1240 (card positions unchanged, more bleed around)
-  const PW = 1861, PH = 1240;
+  const PW = 1861, PH = 1302;
   const MARGIN = 20;
   const DIAM   = 900;
   const GAP    = -69;

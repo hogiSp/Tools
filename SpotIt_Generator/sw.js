@@ -1,7 +1,7 @@
-// SpotIt Generator — Service Worker v1.2
+// SpotIt Generator — Service Worker v1.3
 // Cacht die App für Offline-Nutzung
 
-const CACHE_NAME = 'spotit-v4';
+const CACHE_NAME = 'spotit-v5';
 const ASSETS = [
   './',
   './spotit_generator.html',
