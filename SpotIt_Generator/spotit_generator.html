@@ -2490,7 +2490,7 @@ async function _renderPairCanvas(idxA, idxB) {
   const MARGIN = 20;
   const DIAM   = 900;
   const GAP    = -69;
-  const offX   = MARGIN;
+  const offX   = Math.round((PW - (2*DIAM + GAP)) / 2);
   const offY   = Math.round((PH - DIAM) / 2);
   const pair = document.createElement('canvas');
   pair.width = PW; pair.height = PH;
@@ -2810,10 +2810,10 @@ async function renderBrandingPage() {
 async function renderAndDownloadPair(idxA, idxB) {
   // Canvas +5%: 1772→1861, 1181→1240 (card positions unchanged, more bleed around)
   const PW = 1861, PH = 1240;
-  const MARGIN = 20;   // ~1.7 mm @ 300 dpi — minimal print margin
-  const DIAM   = 900;  // maximized: card circles nearly touch (~8 px gap between edges)
-  const GAP    = -69;  // negative: bounding boxes overlap so circles almost touch
-  const offX   = MARGIN;
+  const MARGIN = 20;
+  const DIAM   = 900;
+  const GAP    = -69;
+  const offX   = Math.round((PW - (2*DIAM + GAP)) / 2);
   const offY   = Math.round((PH - DIAM) / 2);
 
   const pair = document.createElement('canvas');
