@@ -446,7 +446,7 @@ header.collapsed{max-height:0!important;padding-top:0!important;padding-bottom:0
 <header id="main-header">
   <div class="hrow">
     <h1>&#x1F3B4; Spot-It Card Generator</h1>
-    <span style="font-size:10px;font-weight:700;color:#fff;background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.22);border-radius:5px;padding:2px 7px;letter-spacing:.4px;white-space:nowrap;flex-shrink:0">v 1.18</span>
+    <span style="font-size:10px;font-weight:700;color:#fff;background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.22);border-radius:5px;padding:2px 7px;letter-spacing:.4px;white-space:nowrap;flex-shrink:0">v 1.19</span>
     <div class="hrow-sep"></div>
     <button class="hbtn" style="background:linear-gradient(135deg,#16a085,#1abc9c);font-size:13px;padding:7px 16px" onclick="openIC()">&#x1F4E5; Import</button>
     <button class="hbtn" style="background:linear-gradient(135deg,#e67e22,#f39c12);font-size:13px;padding:7px 16px" onclick="openEC()">&#x1F4E4; Export</button>
@@ -2486,10 +2486,10 @@ async function dlAllPairsZip() {
 }
 
 async function _renderPairCanvas(idxA, idxB) {
-  const PW = 1772, PH = 1181;
-  const MARGIN = 59;   // 5 mm @ 300 dpi
-  const GAP    = 10;   // minimal gap between the two cards
-  const DIAM   = Math.min(Math.floor((PW - 2*MARGIN - GAP) / 2), PH - 2*MARGIN); // 822
+  const PW = 1861, PH = 1240;
+  const MARGIN = 20;
+  const DIAM   = 900;
+  const GAP    = -69;
   const offX   = MARGIN;
   const offY   = Math.round((PH - DIAM) / 2);
   const pair = document.createElement('canvas');
@@ -2540,7 +2540,7 @@ function _drawBrandingCircle(pc, x, y, diam) {
 }
 
 async function _renderBrandingCanvas() {
-  const PW = 1772, PH = 1181;
+  const PW = 1861, PH = 1240;
   const page = document.createElement('canvas');
   page.width = PW; page.height = PH;
   const pc = page.getContext('2d');
@@ -2780,8 +2780,8 @@ async function dlAllPairs() {
 }
 
 async function renderBrandingPage() {
-  // Photo size 15x10 cm at 300 dpi — Seite 56: Impressum / Lizenzhinweis
-  const PW = 1772, PH = 1181;
+  // Canvas +5%: 1772→1861, 1181→1240 (cards stay at same position, more bleed)
+  const PW = 1861, PH = 1240;
   const page = document.createElement('canvas');
   page.width = PW; page.height = PH;
   const pc = page.getContext('2d');
@@ -2808,9 +2808,8 @@ async function renderBrandingPage() {
 }
 
 async function renderAndDownloadPair(idxA, idxB) {
-  // Photo size 15x10 cm at 300 dpi = 1772 x 1181 px
-  // DIAM=900: circles nearly touch (8 px gap), MARGIN=20 px (~1.7 mm), utilization 51%
-  const PW = 1772, PH = 1181;
+  // Canvas +5%: 1772→1861, 1181→1240 (card positions unchanged, more bleed around)
+  const PW = 1861, PH = 1240;
   const MARGIN = 20;   // ~1.7 mm @ 300 dpi — minimal print margin
   const DIAM   = 900;  // maximized: card circles nearly touch (~8 px gap between edges)
   const GAP    = -69;  // negative: bounding boxes overlap so circles almost touch
