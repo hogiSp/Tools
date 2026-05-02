@@ -37,7 +37,7 @@ header h1{font-size:1.05rem;white-space:nowrap;margin-right:4px}
 main{flex:1;display:flex;overflow:hidden}
 
 /* ── GALLERY (left) ── */
-.gallery{width:380px;min-width:280px;background:#fff;overflow-y:auto;border-right:2px solid #dde;flex-shrink:0}
+.gallery{width:430px;min-width:300px;background:#fff;overflow-y:auto;border-right:2px solid #dde;flex-shrink:0}
 .gallery-header{padding:6px 10px 4px;font-size:11px;font-weight:700;color:#666;background:#f7f7f7;border-bottom:1px solid #eee;position:sticky;top:0;z-index:1;text-transform:uppercase;letter-spacing:.4px}
 .gl-scale-row{display:flex;align-items:center;gap:5px;margin-top:4px;text-transform:none;letter-spacing:0}
 .gl-scale-row input[type=range]{flex:1;height:14px;accent-color:#e67e22}
@@ -56,6 +56,11 @@ main{flex:1;display:flex;overflow:hidden}
 .sym-act-btn{background:none;border:1px solid #ddd;border-radius:4px;cursor:pointer;font-size:13px;padding:1px 5px;line-height:1.4;color:#888;transition:background .1s,color .1s}
 .sym-act-btn:hover{background:#fee;color:#c0392b;border-color:#c0392b}
 .sym-act-btn.add:hover{background:#eaf6ec;color:#27ae60;border-color:#27ae60}
+/* Paste drop zone */
+.paste-zone{width:44px;flex-shrink:0;border:1.5px dashed #ccc;border-radius:5px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;cursor:pointer;font-size:9px;color:#bbb;transition:border-color .15s,color .15s,background .15s;user-select:none;text-align:center;padding:2px 0}
+.paste-zone:hover,.paste-zone.drag-over{border-color:#2980b9;color:#2980b9;background:#eaf4fd}
+.paste-zone.paste-ok{border-color:#27ae60;background:#eafaf1;color:#27ae60}
+.paste-ico{font-size:15px;line-height:1}
 
 /* ── CARD AREA (right) ── */
 .card-area{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px;min-width:0;overflow:hidden}
@@ -149,7 +154,7 @@ main{flex:1;display:flex;overflow:hidden}
 .gallery{transition:width .22s ease,min-width .22s ease}
 .gallery.collapsed{width:0!important;min-width:0!important;overflow:hidden;border-right:none}
 .gallery-toggle{position:absolute;left:0;top:50%;transform:translateY(-50%);z-index:10;background:#1a252f;color:#fff;border:none;border-radius:0 6px 6px 0;padding:10px 5px;cursor:pointer;font-size:13px;writing-mode:initial;transition:left .22s ease}
-.gallery-toggle.open{left:380px}
+.gallery-toggle.open{left:430px}
 main{position:relative}
 
 /* ── PLAY MODE ── */
@@ -441,7 +446,7 @@ header.collapsed{max-height:0!important;padding-top:0!important;padding-bottom:0
 <header id="main-header">
   <div class="hrow">
     <h1>&#x1F3B4; Spot-It Card Generator</h1>
-    <span style="font-size:10px;font-weight:700;color:#fff;background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.22);border-radius:5px;padding:2px 7px;letter-spacing:.4px;white-space:nowrap;flex-shrink:0">v 1.17</span>
+    <span style="font-size:10px;font-weight:700;color:#fff;background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.22);border-radius:5px;padding:2px 7px;letter-spacing:.4px;white-space:nowrap;flex-shrink:0">v 1.18</span>
     <div class="hrow-sep"></div>
     <button class="hbtn" style="background:linear-gradient(135deg,#16a085,#1abc9c);font-size:13px;padding:7px 16px" onclick="openIC()">&#x1F4E5; Import</button>
     <button class="hbtn" style="background:linear-gradient(135deg,#e67e22,#f39c12);font-size:13px;padding:7px 16px" onclick="openEC()">&#x1F4E4; Export</button>
@@ -1289,10 +1294,86 @@ for (let i = 0; i < N_SYM; i++) {
     inp.click();
   });
 
+  // ── Paste drop zone ──
+  const pasteZone = document.createElement('div');
+  pasteZone.className = 'paste-zone';
+  pasteZone.title = 'Paste image (Ctrl+V) or drag & drop';
+  pasteZone.innerHTML = '<span class="paste-ico">📋</span><span>Paste</span>';
+  pasteZone.dataset.sym = i;
+
+  pasteZone.addEventListener('click', async () => {
+    pasteTarget = i;
+    try {
+      const items = await navigator.clipboard.read();
+      for (const item of items) {
+        const imgType = item.types.find(t => t.startsWith('image/'));
+        if (imgType) {
+          const blob = await item.getType(imgType);
+          await _applyBlobToSym(i, blob);
+          break;
+        }
+      }
+    } catch(e) {
+      // Clipboard read denied — set target so Ctrl+V fires
+      pasteZone.title = 'Now press Ctrl+V to paste';
+      pasteZone.classList.add('drag-over');
+      setTimeout(() => { pasteZone.classList.remove('drag-over'); pasteZone.title = 'Paste image (Ctrl+V) or drag & drop'; }, 1800);
+    }
+  });
+
+  pasteZone.addEventListener('dragover', e => { e.preventDefault(); pasteZone.classList.add('drag-over'); });
+  pasteZone.addEventListener('dragleave', () => pasteZone.classList.remove('drag-over'));
+  pasteZone.addEventListener('drop', async e => {
+    e.preventDefault();
+    pasteZone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) await _applyBlobToSym(i, file);
+  });
+
   actions.append(btnReplace, btnDel);
-  row.append(c, num, sliders, actions);
+  row.append(c, num, sliders, actions, pasteZone);
   galleryList.appendChild(row);
 }
+
+// ── Paste target tracking (last clicked paste zone, or -1) ──
+let pasteTarget = -1;
+
+// Shared: apply a Blob/File as image to symbol idx
+async function _applyBlobToSym(idx, blob) {
+  const url = URL.createObjectURL(blob);
+  const img = new Image();
+  return new Promise(resolve => {
+    img.onload = async () => {
+      const bgRemove = document.getElementById('bg-remove').checked;
+      const tol = +document.getElementById('bg-tol').value;
+      const bgFinal = bgRemove ? await removeWhiteBg(img, tol) : img;
+      const final = await padToSquare(bgFinal);
+      images[idx] = final;
+      applyAutoScale(idx, final);
+      syncScaleSlider(idx);
+      syncRotSlider(idx);
+      paintThumb(idx, final);
+      renderCard();
+      URL.revokeObjectURL(url);
+      // Flash paste zone green
+      const pz = document.querySelector(`.paste-zone[data-sym="${idx}"]`);
+      if (pz) { pz.classList.add('paste-ok'); setTimeout(() => pz.classList.remove('paste-ok'), 900); }
+      resolve();
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(); };
+    img.src = url;
+  });
+}
+
+// Global Ctrl+V handler — routes to last focused paste zone
+document.addEventListener('paste', async e => {
+  if (pasteTarget < 0) return;
+  const item = [...e.clipboardData.items].find(it => it.type.startsWith('image/'));
+  if (!item) return;
+  e.preventDefault();
+  const blob = item.getAsFile();
+  if (blob) await _applyBlobToSym(pasteTarget, blob);
+});
 
 // Slider events
 document.querySelectorAll('.ssl').forEach(el => el.addEventListener('input', e => {
