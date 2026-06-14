@@ -2,13 +2,14 @@
      Deutsch Satzglieder Lerntrainer — ams OSRAM
      Version: 3.1  |  Created: 2026-06-13
      Changed: 2026-06-13 — v3.1: Rundensystem, Nomen-Kategorien, Zeitformen & Gen-Trophäen verbessert
+     Changed: 2026-06-14 — v3.2: Analyse-Subnav (Felder/Quiz/Substantive/Zeitformen/Fälle-Mix/Genitiv✓); Genitiv-Pokale → Übersicht
      ================================================= -->
 <!DOCTYPE html>
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Satzglieder Lerntrainer v3.1</title>
+<title>Satzglieder Lerntrainer v3.4</title>
 <script>
   // Theme ohne Flicker setzen
   (function() {
@@ -198,8 +199,8 @@ body {
 .tab-btn[data-color="indigo"].active { background: #4f46e5; border-color: #4f46e5; }
 .tab-btn .tab-emoji { font-size: 1rem; }
 
-/* ── Lern-Spiele Sub-Navigation ── */
-#lernspiele-subnav {
+/* ── Sub-Navigation (Analyse & Lern-Spiele) ── */
+#lernspiele-subnav, #analyse-subnav {
   display: none;
   flex-wrap: wrap;
   gap: 4px;
@@ -885,6 +886,7 @@ body {
 }
 .frosch-hop { animation: froschHop .6s cubic-bezier(.4,0,.2,1); }
 .frosch-icon { font-size: 2.2rem; display: inline-block; }
+.katze-icon { font-size: 2.2rem; display: inline-block; }
 
 /* ── Magnet Modi Buttons ── */
 .mag-mode-row { display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap; }
@@ -1209,22 +1211,25 @@ body {
 <!-- ── TABS ── -->
 <div class="tabs">
   <button class="tab-btn active" data-color="gray"   onclick="showTab('uebersicht',this)"><span class="tab-emoji">📖</span> Übersicht</button>
-  <button class="tab-btn"        data-color="green"  onclick="showTab('analyse',this)"><span class="tab-emoji">🐱</span> Analyse</button>
+  <button class="tab-btn"        data-color="green"  id="analyse-main-btn" onclick="showTab('analyse',this)"><span class="tab-emoji">🐱</span> Analyse</button>
   <button class="tab-btn"        data-color="indigo" id="lernspiele-main-btn" onclick="showLernspiele(this)"><span class="tab-emoji">🎮</span> Lern-Spiele</button>
+  <button class="tab-btn"        data-color="amber"  id="quiz-main-btn" onclick="showTab('quiz',this)"><span class="tab-emoji">❓</span> Quiz</button>
   <button class="tab-btn"        data-color="blue"   onclick="showTab('ki',this);window.kiTabOpen&&window.kiTabOpen()"><span class="tab-emoji">🤖</span> KI-Tutor</button>
+</div>
+<!-- ── Analyse Sub-Navigation ── -->
+<div id="analyse-subnav">
+  <button class="subtab-btn" onclick="showTab('analyse',this)"><span class="tab-emoji">🐱</span> Analyse</button>
+  <button class="subtab-btn" onclick="showTab('felder',this)"><span class="tab-emoji">✍️</span> Felder</button>
+  <button class="subtab-btn" onclick="showTab('nouns',this)"><span class="tab-emoji">🧱</span> Substantive</button>
+  <button class="subtab-btn" onclick="showTab('verbs',this)"><span class="tab-emoji">⏱️</span> Zeitformen</button>
+  <button class="subtab-btn" onclick="showTab('cases',this)"><span class="tab-emoji">⚔️</span> Fälle-Mix</button>
+  <button class="subtab-btn" onclick="showTab('gentrophy',this)"><span class="tab-emoji">✍️</span> Genitiv✓</button>
 </div>
 <!-- ── Lern-Spiele Sub-Navigation ── -->
 <div id="lernspiele-subnav">
   <button class="subtab-btn" onclick="showTab('magnet',this)"><span class="tab-emoji">🧲</span> Magnet</button>
-  <button class="subtab-btn" onclick="showTab('felder',this)"><span class="tab-emoji">✍️</span> Felder</button>
   <button class="subtab-btn" onclick="showTab('brillen',this)"><span class="tab-emoji">🔤</span> Brillen</button>
   <button class="subtab-btn" onclick="showTab('rollen',this)"><span class="tab-emoji">🎥</span> Rollen</button>
-  <button class="subtab-btn" onclick="showTab('nouns',this)"><span class="tab-emoji">🧱</span> Substantive</button>
-  <button class="subtab-btn" onclick="showTab('verbs',this)"><span class="tab-emoji">⏱️</span> Zeitformen</button>
-  <button class="subtab-btn" onclick="showTab('cases',this)"><span class="tab-emoji">⚔️</span> Fälle-Mix</button>
-  <button class="subtab-btn" onclick="showTab('genlist',this)"><span class="tab-emoji">🏆</span> Genitiv</button>
-  <button class="subtab-btn" onclick="showTab('gentrophy',this)"><span class="tab-emoji">✍️</span> Genitiv✓</button>
-  <button class="subtab-btn" onclick="showTab('quiz',this)"><span class="tab-emoji">❓</span> Quiz</button>
 </div>
 
 <!-- ── MAIN ── -->
@@ -1398,6 +1403,14 @@ body {
 
   <div class="infobox warn">
     ⚠️ <b>Faustregel:</b> Nebenordnend = Verb bleibt an 2. Stelle im zweiten Satz. Unterordnend = Verb rutscht ans Ende des Nebensatzes!
+  </div>
+
+  <hr style="margin:28px 0;border:none;border-top:1px solid var(--border);">
+  <div class="section-title">🏆 Genitiv-Verben — Lernen</div>
+  <div class="gen-trophy-grid" id="genlist-grid"></div>
+  <div id="genlist-hover-box" style="min-height:48px;margin-top:14px;padding:12px 16px;border-radius:10px;background:var(--card);border:1px solid var(--border);font-size:1rem;font-style:italic;color:var(--text2);display:none;"></div>
+  <div class="infobox" style="margin-top:16px;">
+    💡 Diese Verben sind selten, aber sie gehören zur Schulaufgabe! Wenn du sie erkennst, hast du eine Trophäe verdient.
   </div>
 
 </div><!-- /#tab-uebersicht -->
@@ -1780,18 +1793,6 @@ body {
 </div>
 
 <!-- ══════════════════════════════════════
-     TAB: 🏆 GENITIV-LISTE
-     ══════════════════════════════════════ -->
-<div class="tab-panel" id="tab-genlist">
-  <div class="section-title">🏆 Genitiv-Verben — seltene Spezialwörter</div>
-  <div class="gen-trophy-grid" id="genlist-grid"></div>
-  <div id="genlist-hover-box" style="min-height:48px;margin-top:14px;padding:12px 16px;border-radius:10px;background:var(--card);border:1px solid var(--border);font-size:1rem;font-style:italic;color:var(--text2);display:none;"></div>
-  <div class="infobox" style="margin-top:16px;">
-    💡 Diese Verben sind selten, aber sie gehören zur Schulaufgabe! Wenn du sie erkennst, hast du eine Trophäe verdient.
-  </div>
-</div>
-
-<!-- ══════════════════════════════════════
      TAB: ✍️ GENITIV-TROPHÄEN
      ══════════════════════════════════════ -->
 <div class="tab-panel" id="tab-gentrophy">
@@ -1975,19 +1976,29 @@ function toggleTheme() {
   document.documentElement.setAttribute('data-theme', next);
   localStorage.setItem('satzglieder-theme', next);
 }
-const LERNSPIELE_TABS = new Set(['magnet','felder','brillen','rollen','nouns','verbs','cases','genlist','gentrophy','quiz']);
+const LERNSPIELE_TABS = new Set(['magnet','brillen','rollen']);
+const ANALYSE_TABS    = new Set(['analyse','felder','nouns','verbs','cases','gentrophy']);
 function showTab(id, btn) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab-btn, .subtab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-'+id).classList.add('active');
-  const subnav = document.getElementById('lernspiele-subnav');
+  const lsubnav = document.getElementById('lernspiele-subnav');
+  const asubnav = document.getElementById('analyse-subnav');
   if (LERNSPIELE_TABS.has(id)) {
-    // Sub-tab: keep Lern-Spiele main button active, show subnav
-    subnav.style.display = 'flex';
+    // Sub-tab: keep Lern-Spiele main button active, show lernspiele subnav
+    lsubnav.style.display = 'flex';
+    asubnav.style.display = 'none';
     document.getElementById('lernspiele-main-btn')?.classList.add('active');
     if (btn) btn.classList.add('active');
+  } else if (ANALYSE_TABS.has(id)) {
+    // Analyse sub-tab: keep Analyse main button active, show analyse subnav
+    lsubnav.style.display = 'none';
+    asubnav.style.display = 'flex';
+    document.getElementById('analyse-main-btn')?.classList.add('active');
+    if (btn) btn.classList.add('active');
   } else {
-    subnav.style.display = 'none';
+    lsubnav.style.display = 'none';
+    asubnav.style.display = 'none';
     if (btn) btn.classList.add('active');
   }
   _activeTab = id;
@@ -2021,7 +2032,7 @@ let _activeTab = 'uebersicht';
 function speak(text, force=false) {
   if (!('speechSynthesis' in window)) return;
   // Don't speak during page init — only when user is on an audio-relevant tab
-  const audioTabs = ['nouns','verbs','genlist','gentrophy','cases'];
+  const audioTabs = ['nouns','verbs','gentrophy','cases'];
   if (!force && !audioTabs.includes(_activeTab)) return;
   // Fix TTS pronunciation of grammatical terms
   const ttsText = text
@@ -2329,7 +2340,7 @@ function anaClickChip(w){
 }
 function anaChipDrag(e,word){e.dataTransfer.setData('text/plain',word);}
 function triggerFroschHop(){
-  const frog=document.getElementById('frog-icon');
+  const frog=document.getElementById('katze-icon');
   if(!frog) return;
   frog.classList.remove('frosch-hop');
   void frog.offsetWidth;
@@ -2342,8 +2353,8 @@ function renderAnaSteps(){
     const p=document.createElement('div');
     p.className='step-pill'+(i<anaStep?' done-step':i===anaStep?' active-step':'');
     const ico=i<anaStep?'✅ ':i===anaStep?'':' · ';
-    const frog=i===anaStep?`<span class="frosch-icon" id="frog-icon">�</span> `:'';
-    p.innerHTML=ico+frog+s.label;
+    const katze=i===anaStep?`<span class="katze-icon" id="katze-icon">🐱</span> `:'';
+    p.innerHTML=ico+katze+s.label;
     row.appendChild(p);
   });
 }
@@ -2356,7 +2367,7 @@ function renderAnaDropzones(s){
     const sol=SENTENCE_POOL[anaIdx].solution[key]||[];
     const isDone=sol.length===0?(anaFilled[key]||[]).includes('—'):sol.every(x=>(anaFilled[key]||[]).some(y=>norm(y)===norm(x)));
     if(isDone)dz.classList.add('done');
-    dz.innerHTML=`<div class="dropzone-label">${label}${isActive?' <span id="frog-dz">🐸</span>':''}<span class="hint">${hint}</span></div><div class="dropped-chips" id="ana-dc-${key}">${(anaFilled[key]||[]).map(w=>`<span class="dropped-chip">${w}</span>`).join('')}</div>`;
+    dz.innerHTML=`<div class="dropzone-label">${label}${isActive?' <span id="katze-dz">🐱</span>':''}<span class="hint">${hint}</span></div><div class="dropped-chips" id="ana-dc-${key}">${(anaFilled[key]||[]).map(w=>`<span class="dropped-chip">${w}</span>`).join('')}</div>`;
     if(key==='adv'&&isDone&&!anaAdvDone){
       const sub=document.createElement('div');
       sub.className='adv-subtype show'; sub.id='adv-sub';
