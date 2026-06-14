@@ -9,7 +9,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Satzglieder Lerntrainer v3.4</title>
+<title>Satzglieder Lerntrainer v3.5</title>
 <script>
   // Theme ohne Flicker setzen
   (function() {
@@ -213,9 +213,9 @@ body {
   border: 1px solid var(--border);
   border-radius: 8px;
   color: var(--text2);
-  padding: 5px 12px;
+  padding: 8px 16px;
   cursor: pointer;
-  font-size: 0.82rem;
+  font-size: 0.95rem;
   font-weight: 600;
   white-space: nowrap;
   transition: all .15s;
@@ -887,6 +887,7 @@ body {
 .frosch-hop { animation: froschHop .6s cubic-bezier(.4,0,.2,1); }
 .frosch-icon { font-size: 2.2rem; display: inline-block; }
 .katze-icon { font-size: 2.2rem; display: inline-block; }
+#katze-dz { font-size: 2rem; line-height: 1; vertical-align: middle; }
 
 /* ── Magnet Modi Buttons ── */
 .mag-mode-row { display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap; }
@@ -1465,7 +1466,7 @@ body {
       <div class="game-sentence" id="ana-sentence">—</div>
       <div class="steps-row" id="ana-steps"></div>
       <div class="chip-pool" id="ana-chips"></div>
-      <div style="margin-bottom:8px;"><span class="chip none-chip" draggable="true" ondragstart="anaChipDrag(event,'—')">da ist keins</span></div>
+      <div style="margin-bottom:8px;"><span class="chip none-chip" draggable="true" ondragstart="anaChipDrag(event,'—')" onclick="anaClickChip('—')">da ist keins</span></div>
       <div class="game-feedback" id="ana-feedback">Ziehe zuerst das Verb in die Zone „Verb".</div>
       <div class="game-btn-row">
         <button class="game-btn primary" onclick="anaNextBtn()">🎲 Neuer Satz</button>
@@ -1814,10 +1815,10 @@ body {
   <div class="round-progress-row"><span id="case-round-text">Runde 1 von 5</span><span id="case-round-score">0 richtig</span></div>
   <div class="round-bar-track"><div class="round-bar-fill" id="case-round-fill" style="width:0%"></div></div>
   <div class="quiz-container">
-    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;"><button class="case-level-btn a-gen" id="cl-gen" onclick="caseSetLevel('gen')">1: nur Genitiv</button><button class="case-level-btn" id="cl-dat" onclick="caseSetLevel('dat')">2: +Dativ</button><button class="case-level-btn" id="cl-mix" onclick="caseSetLevel('mix')">3: +Akkusativ</button></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;"><button class="case-level-btn" id="cl-dat" onclick="caseSetLevel('dat')">1: nur Dativ</button><button class="case-level-btn a-mix" id="cl-mix" onclick="caseSetLevel('mix')">2: Dativ + Akkusativ</button></div>
     <div class="game-sentence-label">Welcher Fall ist das Objekt?</div>
     <div class="game-sentence" id="case-sentence">—</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:14px 0;" id="case-btns"><button class="case-big-btn" id="cb-gen" onclick="caseAnswer('Genitiv')">Genitiv<br><small style="font-weight:400;font-size:0.7rem;">Wessen?</small></button><button class="case-big-btn" id="cb-dat" onclick="caseAnswer('Dativ')">Dativ<br><small style="font-weight:400;font-size:0.7rem;">Wem?</small></button><button class="case-big-btn" id="cb-akk" onclick="caseAnswer('Akkusativ')">Akkusativ<br><small style="font-weight:400;font-size:0.7rem;">Wen/Was?</small></button></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0;" id="case-btns"><button class="case-big-btn" id="cb-dat" onclick="caseAnswer('Dativ')">Dativ<br><small style="font-weight:400;font-size:0.7rem;">Wem?</small></button><button class="case-big-btn" id="cb-akk" onclick="caseAnswer('Akkusativ')">Akkusativ<br><small style="font-weight:400;font-size:0.7rem;">Wen/Was?</small></button></div>
     <div class="game-feedback" id="case-feedback" style="display:none;"></div>
     <div class="game-btn-row" style="margin-top:10px;"><button class="game-btn primary" onclick="caseNext()">🎲 Nächster Satz</button></div>
   </div>
@@ -1898,7 +1899,7 @@ function resetAll() {
   initAllRoundGames();
   startQ1(); startQ2(); startQ3(); startQ4();
   magnetNext(); anaNext(); feldNext(); brillenInit(); rollenInit();
-  nounNext(); verbNext(); genNext(); caseSetLevel('gen');
+  nounNext(); verbNext(); genNext(); caseSetLevel('mix');
 }
 
 const ROUND_TOTAL=5;
@@ -3156,16 +3157,14 @@ function genSubmit(){
 // ══════════════════════════════════════
 const DATIVE_VERBS=[{verb:"helfen",object:"dem Kind",example:"Maria hilft dem Kind.",caseName:"Dativ"},{verb:"danken",object:"dem Lehrer",example:"Tom dankt dem Lehrer.",caseName:"Dativ"},{verb:"folgen",object:"dem Hund",example:"Lucy folgt dem Hund.",caseName:"Dativ"},{verb:"antworten",object:"der Mutter",example:"Der Junge antwortet der Mutter.",caseName:"Dativ"}];
 const ACCUSATIVE_VERBS=[{verb:"sehen",object:"den Hund",example:"Maria sieht den Hund.",caseName:"Akkusativ"},{verb:"lesen",object:"das Buch",example:"Tom liest das Buch.",caseName:"Akkusativ"},{verb:"bauen",object:"die Rakete",example:"Die Ingenieurin baut die Rakete.",caseName:"Akkusativ"},{verb:"prüfen",object:"den Plan",example:"Der Lehrer prüft den Plan.",caseName:"Akkusativ"}];
-let caseLevel='gen',casePool=[],caseIdx=0,caseAnswered=false;
+let caseLevel='mix',casePool=[],caseIdx=0,caseAnswered=false;
 function caseSetLevel(lvl){
   caseLevel=lvl;
-  ['gen','dat','mix'].forEach(l=>{
+  ['dat','mix'].forEach(l=>{
     const b=document.getElementById('cl-'+l);
     if(b) b.className='case-level-btn'+(l===lvl?' a-'+lvl:'');
   });
-  casePool=lvl==='gen'?GENITIVE_VERBS.map(x=>({...x,caseName:"Genitiv"})):
-            lvl==='dat'?[...GENITIVE_VERBS.map(x=>({...x,caseName:"Genitiv"})),...DATIVE_VERBS]:
-            [...GENITIVE_VERBS.map(x=>({...x,caseName:"Genitiv"})),...DATIVE_VERBS,...ACCUSATIVE_VERBS];
+  casePool=lvl==='dat'?[...DATIVE_VERBS]:[...DATIVE_VERBS,...ACCUSATIVE_VERBS];
   caseIdx=randIdx(casePool.length); caseAnswered=false;
   caseRender();
 }
@@ -3285,7 +3284,7 @@ initRandomStarts();
 
 startQ1(); startQ2(); startQ3(); startQ4();
 magnetInit(); anaInit(); feldInit(); brillenInit(); rollenInit();
-nounNext(); verbNext(); genlistRender(); genNext(); caseSetLevel('gen');
+nounNext(); verbNext(); genlistRender(); genNext(); caseSetLevel('mix');
 
 // Cookie storage for trophies/round scores
 (function loadFromCookie() {
