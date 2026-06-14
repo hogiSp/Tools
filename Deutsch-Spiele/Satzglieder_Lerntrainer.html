@@ -9,7 +9,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Satzglieder Lerntrainer v3.5</title>
+<title>Satzglieder Lerntrainer v3.6</title>
 <script>
   // Theme ohne Flicker setzen
   (function() {
@@ -131,6 +131,73 @@ body {
   0%,100% { box-shadow: 0 0 8px rgba(139,92,246,.4); }
   50%      { box-shadow: 0 0 20px rgba(139,92,246,.8); }
 }
+/* ── Bonus Arcade Overlay (in-app caller) ──────────────── */
+#bonus-arcade-overlay {
+  display: none; position: fixed; inset: 0; z-index: 9000;
+  background: #020617; flex-direction: column;
+}
+#bonus-arcade-overlay.active { display: flex; }
+#bonus-timer-bar {
+  flex-shrink: 0; height: 52px;
+  background: rgba(2,6,23,.88);
+  border-bottom: 1px solid rgba(255,255,255,.10);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px; gap: 16px;
+}
+#bonus-timer-bar .btb-left { display: flex; align-items: center; gap: 12px; }
+#bonus-timer-bar .btb-title { font-weight: 800; font-size: 15px; color: #e2e8f0; }
+#bonus-progress-wrap {
+  flex: 1; height: 8px; background: rgba(255,255,255,.08);
+  border-radius: 999px; overflow: hidden; max-width: 320px;
+}
+#bonus-progress-bar {
+  height: 100%; width: 100%;
+  background: linear-gradient(90deg, #22d3ee, #6366f1);
+  border-radius: 999px; transition: background .5s, width 1s linear;
+}
+#bonus-progress-bar.warn { background: linear-gradient(90deg, #f59e0b, #ef4444); }
+#bonus-timer-display {
+  font-size: 22px; font-weight: 950; font-variant-numeric: tabular-nums;
+  color: #e2e8f0; min-width: 58px; text-align: right; transition: color .4s;
+}
+#bonus-timer-display.warn { color: #f87171; }
+#bonus-close-btn {
+  border: 1px solid rgba(255,255,255,.18); border-radius: 12px;
+  background: rgba(255,255,255,.08); color: #f8fafc; padding: 7px 16px;
+  font-weight: 800; font-size: 13px; cursor: pointer; white-space: nowrap;
+  transition: background .15s;
+}
+#bonus-close-btn:hover { background: rgba(255,255,255,.16); }
+#bonus-arcade-frame { flex: 1; border: none; display: block; width: 100%; min-height: 0; }
+#bonus-time-warning {
+  display: none; position: fixed; inset: 0; z-index: 9100;
+  background: rgba(2,6,23,.78); backdrop-filter: blur(8px);
+  align-items: center; justify-content: center;
+}
+#bonus-time-warning.active { display: flex; }
+#bonus-time-warning .btw-box {
+  background: rgba(15,23,42,.95); border: 1px solid rgba(248,113,113,.38);
+  border-radius: 28px; padding: 44px 40px; text-align: center;
+  max-width: 420px; width: 90%;
+  box-shadow: 0 24px 70px rgba(0,0,0,.5), 0 0 0 1px rgba(248,113,113,.18);
+  animation: pop .22s cubic-bezier(.34,1.56,.64,1) both;
+}
+#bonus-time-warning .btw-icon { font-size: 56px; margin-bottom: 16px; }
+#bonus-time-warning h2 { font-size: 28px; font-weight: 950; color: #e2e8f0; margin-bottom: 10px; }
+#bonus-time-warning p  { color: #94a3b8; font-size: 15px; margin-bottom: 28px; line-height: 1.5; }
+#bonus-time-warning .btw-end {
+  display: inline-block; background: #ef4444; border: none;
+  border-radius: 14px; padding: 14px 30px; color: #fff;
+  font-size: 17px; font-weight: 900; cursor: pointer;
+  transition: background .15s, transform .12s;
+}
+#bonus-time-warning .btw-end:hover { background: #dc2626; transform: translateY(-1px); }
+#bonus-time-warning .btw-later {
+  display: block; margin-top: 14px; background: none; border: none;
+  color: #64748b; font-size: 13px; cursor: pointer;
+  text-decoration: underline; text-underline-offset: 3px;
+}
+#bonus-time-warning .btw-later:hover { color: #94a3b8; }
 .streak-badge {
   background: var(--orange);
   color: white;
@@ -1196,6 +1263,31 @@ body {
   </div>
 </div>
 
+<!-- ── Bonus Arcade Overlay (in-app; replaces BonusGames_Caller.html) ── -->
+<div id="bonus-arcade-overlay">
+  <div id="bonus-timer-bar">
+    <div class="btb-left">
+      <span class="btb-title">&#127918; BonusGames</span>
+      <div id="bonus-progress-wrap">
+        <div id="bonus-progress-bar"></div>
+      </div>
+    </div>
+    <span id="bonus-timer-display">5:00</span>
+    <button id="bonus-close-btn" onclick="closeBonusArcade()">&#x2715; Beenden</button>
+  </div>
+  <iframe id="bonus-arcade-frame" allow="autoplay"></iframe>
+</div>
+<!-- ── Bonus Time-up Warning ── -->
+<div id="bonus-time-warning">
+  <div class="btw-box">
+    <div class="btw-icon">&#9201;</div>
+    <h2>Zeit abgelaufen!</h2>
+    <p>Deine 5-min&#252;tige Spielzeit ist um.<br>Beende deine aktuelle Runde und schlie&#223;e dann die Spielzeit.</p>
+    <button class="btw-end" onclick="closeBonusArcade()">Spielzeit beenden</button>
+    <button class="btw-later" onclick="dismissBonusWarning()">Runde l&#228;uft noch kurz weiter&#8230;</button>
+  </div>
+</div>
+
 <!-- ── TOP BAR ── -->
 <div class="topbar">
   <div class="topbar-title">📚 <span>Satzglieder</span> Lerntrainer</div>
@@ -1874,9 +1966,77 @@ function redeemBonus() {
 }
 function doCelebOpen() {
   document.getElementById('bonus-celebrate').classList.remove('active');
-  const base = location.href.replace(/\/[^/]+$/, '/');
-  window.open(base + 'BonusGames_Caller.html', '_blank');
+  startBonusSession();
 }
+
+// ── Bonus Arcade in-app (iframe-session-gate pattern) ───────────────────
+(function () {
+  const SESSION_SECONDS = 5 * 60;
+  const WARN_AT         = 60;
+  let _timer    = null;
+  let _rem      = SESSION_SECONDS;
+  let _expired  = false;
+
+  const el = id => document.getElementById(id);
+
+  function _fmt(s) {
+    return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+  }
+  function _sendGrant() {
+    const tok = Date.now() + '-' + Math.random().toString(36).slice(2);
+    el('bonus-arcade-frame').contentWindow.postMessage({ type: 'ARCADE_GRANT', token: tok }, '*');
+  }
+
+  window.addEventListener('message', e => {
+    if (!e.data) return;
+    if (e.data.type === 'ARCADE_READY') console.log('[Lerntrainer] Arcade granted.');
+    if (e.data.type === 'GAME_ROUND_OVER' && _expired) closeBonusArcade();
+  });
+
+  window.startBonusSession = function () {
+    _rem = SESSION_SECONDS; _expired = false;
+    el('bonus-timer-display').textContent = _fmt(_rem);
+    el('bonus-timer-display').classList.remove('warn');
+    el('bonus-progress-bar').classList.remove('warn');
+    el('bonus-progress-bar').style.width = '100%';
+    el('bonus-time-warning').classList.remove('active');
+    el('bonus-arcade-overlay').classList.add('active');
+    const f = el('bonus-arcade-frame');
+    f.onload = () => { setTimeout(_sendGrant, 150); f.onload = null; };
+    f.src = 'BonusGames_Arcade.html';
+    if (_timer) clearInterval(_timer);
+    _timer = setInterval(_tick, 1000);
+  };
+
+  function _tick() {
+    if (_rem > 0) _rem--;
+    const pct = (_rem / SESSION_SECONDS * 100) + '%';
+    el('bonus-progress-bar').style.width = pct;
+    el('bonus-timer-display').textContent = _fmt(_rem);
+    if (_rem <= WARN_AT) {
+      el('bonus-timer-display').classList.add('warn');
+      el('bonus-progress-bar').classList.add('warn');
+    }
+    if (_rem === 0) {
+      clearInterval(_timer); _timer = null; _expired = true;
+      el('bonus-time-warning').classList.add('active');
+    }
+  }
+
+  window.dismissBonusWarning = function () {
+    el('bonus-time-warning').classList.remove('active');
+    // Wait for GAME_ROUND_OVER to auto-close
+  };
+
+  window.closeBonusArcade = function () {
+    if (_timer) { clearInterval(_timer); _timer = null; }
+    _expired = false;
+    el('bonus-arcade-frame').src = 'about:blank';
+    el('bonus-arcade-overlay').classList.remove('active');
+    el('bonus-time-warning').classList.remove('active');
+  };
+}());
+// ────────────────────────────────────────────────────────────────────────
 
 function addScore(n) {
   totalScore += n; streak++;
