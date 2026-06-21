@@ -1,0 +1,1360 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Zahlenkarten-Jagd</title>
+  <style>
+    :root {
+      --bg1: #111827;
+      --bg2: #312e81;
+      --panel: rgba(255,255,255,.11);
+      --panel2: rgba(255,255,255,.17);
+      --text: #f8fafc;
+      --muted: #cbd5e1;
+      --good: #22c55e;
+      --bad: #ef4444;
+      --gold: #facc15;
+      --n: 7;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow-x: hidden;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 15% 15%, rgba(236,72,153,.35), transparent 28%),
+        radial-gradient(circle at 85% 25%, rgba(34,211,238,.28), transparent 26%),
+        radial-gradient(circle at 50% 90%, rgba(250,204,21,.2), transparent 30%),
+        linear-gradient(135deg, var(--bg1), var(--bg2));
+    }
+
+    button, input, select {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+      border: 0;
+    }
+
+    .app {
+      width: min(1220px, 100%);
+      margin: 0 auto;
+      padding: clamp(10px, 2vw, 22px);
+    }
+
+    header {
+      display: flex;
+      gap: 14px;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+
+    .title {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.55rem, 4vw, 3rem);
+      letter-spacing: -0.04em;
+      text-shadow: 0 5px 18px rgba(0,0,0,.25);
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: .98rem;
+    }
+
+    .topStats {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .pill {
+      background: rgba(255,255,255,.14);
+      border: 1px solid rgba(255,255,255,.18);
+      border-radius: 999px;
+      padding: 10px 14px;
+      box-shadow: 0 12px 30px rgba(0,0,0,.12);
+      backdrop-filter: blur(10px);
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      font-weight: 800;
+    }
+
+    .main {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 330px;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .boardPanel, .sidePanel {
+      background: var(--panel);
+      border: 1px solid rgba(255,255,255,.16);
+      box-shadow: 0 22px 70px rgba(0,0,0,.22);
+      border-radius: 28px;
+      backdrop-filter: blur(14px);
+    }
+
+    .boardPanel {
+      padding: clamp(10px, 2vw, 18px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .targetWrap {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .targetCard {
+      background:
+        linear-gradient(135deg, rgba(255,255,255,.18), rgba(255,255,255,.07)),
+        radial-gradient(circle at 20% 20%, rgba(250,204,21,.35), transparent 40%);
+      border: 1px solid rgba(255,255,255,.18);
+      border-radius: 22px;
+      padding: 12px 16px;
+      min-height: 86px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .targetLabel {
+      color: var(--muted);
+      font-weight: 700;
+      font-size: .93rem;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .targetNumber {
+      font-size: clamp(2.6rem, 8vw, 5.2rem);
+      line-height: .9;
+      font-weight: 950;
+      color: white;
+      text-shadow: 0 6px 0 rgba(0,0,0,.14), 0 0 28px rgba(250,204,21,.35);
+    }
+
+    .formulaHint {
+      color: var(--muted);
+      font-size: .95rem;
+      font-weight: 650;
+      text-align: right;
+    }
+
+    .board {
+      --gap: clamp(5px, 1.2vw, 10px);
+      display: grid;
+      grid-template-columns: repeat(var(--n), 1fr);
+      gap: var(--gap);
+      width: min(92vmin, 720px);
+      max-width: 100%;
+      margin: 0 auto;
+      touch-action: manipulation;
+    }
+
+    .board.shake {
+      animation: shake .34s ease-in-out;
+    }
+
+    .card {
+      aspect-ratio: 1 / 1;
+      border-radius: clamp(10px, 2vw, 18px);
+      color: #fff;
+      font-weight: 950;
+      font-size: clamp(1.1rem, 4.2vmin, 2.35rem);
+      text-shadow: 0 2px 0 rgba(0,0,0,.22);
+      box-shadow:
+        inset 0 2px 0 rgba(255,255,255,.38),
+        inset 0 -8px 18px rgba(0,0,0,.13),
+        0 10px 20px rgba(0,0,0,.18);
+      transform: translateZ(0);
+      transition: transform .13s ease, filter .13s ease, box-shadow .13s ease, opacity .2s ease;
+      position: relative;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    .card:before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 25% 18%, rgba(255,255,255,.5), transparent 28%);
+      pointer-events: none;
+    }
+
+    .card:hover {
+      transform: translateY(-2px) scale(1.025);
+      filter: brightness(1.08);
+    }
+
+    .card.selected {
+      outline: 4px solid white;
+      outline-offset: -5px;
+      transform: scale(.94);
+      box-shadow:
+        0 0 0 4px rgba(250,204,21,.85),
+        0 0 30px rgba(250,204,21,.55),
+        inset 0 2px 0 rgba(255,255,255,.38);
+      animation: pop .18s ease;
+    }
+
+    .card.found {
+      box-shadow:
+        0 0 0 3px rgba(34,197,94,.9),
+        0 0 24px rgba(34,197,94,.42),
+        inset 0 2px 0 rgba(255,255,255,.38);
+    }
+
+    .card.good {
+      animation: successPulse .55s ease;
+    }
+
+    .card.bad {
+      animation: badPulse .42s ease;
+      box-shadow:
+        0 0 0 4px rgba(239,68,68,.95),
+        0 0 28px rgba(239,68,68,.55);
+    }
+
+    .num-1 { background: linear-gradient(135deg, #ef4444, #be123c); }
+    .num-2 { background: linear-gradient(135deg, #f97316, #ea580c); }
+    .num-3 { background: linear-gradient(135deg, #facc15, #ca8a04); }
+    .num-4 { background: linear-gradient(135deg, #22c55e, #15803d); }
+    .num-5 { background: linear-gradient(135deg, #14b8a6, #0f766e); }
+    .num-6 { background: linear-gradient(135deg, #38bdf8, #2563eb); }
+    .num-7 { background: linear-gradient(135deg, #8b5cf6, #6d28d9); }
+    .num-8 { background: linear-gradient(135deg, #ec4899, #be185d); }
+    .num-9 { background: linear-gradient(135deg, #a3e635, #65a30d); }
+
+    .sidePanel {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .message {
+      min-height: 54px;
+      display: flex;
+      align-items: center;
+      border-radius: 18px;
+      padding: 12px 14px;
+      background: rgba(15,23,42,.32);
+      border: 1px solid rgba(255,255,255,.11);
+      color: var(--muted);
+      font-weight: 750;
+      line-height: 1.25;
+    }
+
+    .message.good {
+      color: #dcfce7;
+      background: rgba(34,197,94,.18);
+      border-color: rgba(34,197,94,.35);
+    }
+
+    .message.bad {
+      color: #fee2e2;
+      background: rgba(239,68,68,.18);
+      border-color: rgba(239,68,68,.35);
+    }
+
+    .sectionTitle {
+      margin: 2px 0 4px;
+      color: white;
+      font-size: 1rem;
+      font-weight: 900;
+      letter-spacing: -.02em;
+    }
+
+    .players {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 265px;
+      overflow: auto;
+      padding-right: 2px;
+    }
+
+    .playerBtn {
+      width: 100%;
+      color: white;
+      background: rgba(255,255,255,.11);
+      border: 1px solid rgba(255,255,255,.13);
+      border-radius: 16px;
+      padding: 10px 12px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 8px;
+      text-align: left;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .playerBtn.active {
+      background: linear-gradient(135deg, rgba(250,204,21,.32), rgba(236,72,153,.18));
+      border-color: rgba(250,204,21,.72);
+      box-shadow: 0 0 22px rgba(250,204,21,.2);
+    }
+
+    .playerName {
+      font-weight: 900;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .score {
+      font-size: 1.25rem;
+      font-weight: 950;
+      color: var(--gold);
+    }
+
+    .floatingPlus {
+      position: absolute;
+      right: 18px;
+      top: 6px;
+      color: #bbf7d0;
+      font-weight: 950;
+      font-size: 1.2rem;
+      pointer-events: none;
+      animation: floatUp .85s ease forwards;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .btn {
+      border-radius: 16px;
+      padding: 11px 12px;
+      color: white;
+      font-weight: 900;
+      background: rgba(255,255,255,.13);
+      border: 1px solid rgba(255,255,255,.15);
+      box-shadow: 0 10px 20px rgba(0,0,0,.12);
+      transition: transform .12s ease, filter .12s ease, background .12s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.08);
+    }
+
+    .btn.primary {
+      background: linear-gradient(135deg, #f59e0b, #ec4899);
+    }
+
+    .btn.danger {
+      background: linear-gradient(135deg, #ef4444, #7f1d1d);
+    }
+
+    .btn.goodBtn {
+      background: linear-gradient(135deg, #22c55e, #0f766e);
+    }
+
+    .smallInfo {
+      color: var(--muted);
+      line-height: 1.35;
+      font-size: .92rem;
+      background: rgba(15,23,42,.23);
+      border: 1px solid rgba(255,255,255,.09);
+      border-radius: 16px;
+      padding: 11px 12px;
+    }
+
+    .toggleLine {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      color: var(--muted);
+      font-weight: 700;
+      font-size: .93rem;
+    }
+
+    .toggleLine input {
+      width: 18px;
+      height: 18px;
+      accent-color: #facc15;
+    }
+
+    .solutions {
+      display: none;
+      max-height: 170px;
+      overflow: auto;
+      color: #e2e8f0;
+      background: rgba(15,23,42,.3);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 16px;
+      padding: 10px 12px;
+      font-size: .9rem;
+      line-height: 1.5;
+    }
+
+    .solutions.show {
+      display: block;
+    }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(236,72,153,.34), transparent 32%),
+        radial-gradient(circle at 80% 25%, rgba(34,211,238,.28), transparent 30%),
+        rgba(2,6,23,.78);
+      backdrop-filter: blur(14px);
+    }
+
+    .overlay.hidden {
+      display: none;
+    }
+
+    .modal {
+      width: min(760px, 100%);
+      max-height: min(92vh, 920px);
+      overflow: auto;
+      background: rgba(15,23,42,.86);
+      border: 1px solid rgba(255,255,255,.16);
+      border-radius: 30px;
+      box-shadow: 0 30px 100px rgba(0,0,0,.45);
+      padding: clamp(18px, 4vw, 32px);
+    }
+
+    .modal h2 {
+      margin: 0 0 8px;
+      font-size: clamp(2rem, 7vw, 4rem);
+      letter-spacing: -.06em;
+      line-height: .95;
+    }
+
+    .modal p {
+      color: var(--muted);
+      line-height: 1.45;
+      margin: 8px 0 16px;
+    }
+
+    .settings {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin: 16px 0;
+    }
+
+    .field {
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.13);
+      border-radius: 18px;
+      padding: 12px;
+    }
+
+    .field label {
+      display: block;
+      color: #e2e8f0;
+      font-weight: 850;
+      margin-bottom: 7px;
+      font-size: .92rem;
+    }
+
+    .field input, .field select {
+      width: 100%;
+      background: rgba(255,255,255,.95);
+      color: #111827;
+      border: 0;
+      border-radius: 12px;
+      padding: 10px 11px;
+      outline: none;
+      font-weight: 750;
+    }
+
+    .nameGrid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin: 8px 0 16px;
+    }
+
+    .nameGrid input {
+      width: 100%;
+      background: rgba(255,255,255,.95);
+      color: #111827;
+      border: 0;
+      border-radius: 13px;
+      padding: 10px 11px;
+      font-weight: 750;
+    }
+
+    .bigStart {
+      width: 100%;
+      padding: 15px 18px;
+      border-radius: 20px;
+      color: white;
+      background: linear-gradient(135deg, #f59e0b, #ec4899, #8b5cf6);
+      font-weight: 950;
+      font-size: 1.15rem;
+      box-shadow: 0 18px 35px rgba(236,72,153,.28);
+    }
+
+    .ranking {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin: 16px 0;
+    }
+
+    .rankRow {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 10px;
+      align-items: center;
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: rgba(255,255,255,.1);
+      border: 1px solid rgba(255,255,255,.12);
+      font-weight: 900;
+    }
+
+    .rankRow:first-child {
+      background: linear-gradient(135deg, rgba(250,204,21,.32), rgba(245,158,11,.14));
+      border-color: rgba(250,204,21,.5);
+    }
+
+    .particle {
+      position: fixed;
+      z-index: 100;
+      width: 10px;
+      height: 10px;
+      border-radius: 3px;
+      pointer-events: none;
+      animation: confetti .9s ease-out forwards;
+    }
+
+    @keyframes pop {
+      from { transform: scale(.82); }
+      to { transform: scale(.94); }
+    }
+
+    @keyframes successPulse {
+      0% { transform: scale(.94); }
+      40% { transform: scale(1.13); filter: brightness(1.22); }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes badPulse {
+      0%,100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      50% { transform: translateX(5px); }
+      75% { transform: translateX(-3px); }
+    }
+
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      20% { transform: translateX(-8px); }
+      40% { transform: translateX(8px); }
+      60% { transform: translateX(-5px); }
+      80% { transform: translateX(5px); }
+    }
+
+    @keyframes floatUp {
+      to { transform: translateY(-34px); opacity: 0; }
+    }
+
+    @keyframes confetti {
+      from {
+        transform: translate(0,0) rotate(0deg) scale(1);
+        opacity: 1;
+      }
+      to {
+        transform: translate(var(--dx), var(--dy)) rotate(520deg) scale(.4);
+        opacity: 0;
+      }
+    }
+
+    @media (max-width: 920px) {
+      .main {
+        grid-template-columns: 1fr;
+      }
+
+      .sidePanel {
+        order: -1;
+      }
+
+      .players {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        max-height: none;
+      }
+
+      .board {
+        width: min(96vw, 650px);
+      }
+    }
+
+    @media (max-width: 560px) {
+      .app {
+        padding: 8px;
+      }
+
+      header {
+        margin-bottom: 8px;
+      }
+
+      .targetWrap {
+        grid-template-columns: 1fr;
+      }
+
+      .targetCard {
+        min-height: 74px;
+        padding: 10px 12px;
+      }
+
+      .formulaHint {
+        text-align: left;
+      }
+
+      .sidePanel, .boardPanel {
+        border-radius: 20px;
+        padding: 10px;
+      }
+
+      .controls, .settings, .nameGrid {
+        grid-template-columns: 1fr;
+      }
+
+      .players {
+        grid-template-columns: 1fr;
+      }
+
+      .pill {
+        padding: 8px 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="title">
+        <h1>Zahlenkarten-Jagd</h1>
+        <div class="subtitle">Finde 3 benachbarte Karten in gerader Reihe: <strong>A × B ± C = Zielzahl</strong></div>
+      </div>
+      <div class="topStats">
+        <div class="pill">⏱️ <span id="timer">∞</span></div>
+        <div class="pill">🎯 Treffer offen: <span id="remaining">0</span></div>
+      </div>
+    </header>
+
+    <main class="main">
+      <section class="boardPanel">
+        <div class="targetWrap">
+          <div class="targetCard">
+            <div>
+              <div class="targetLabel">Zielzahl</div>
+              <div class="targetNumber" id="target">?</div>
+            </div>
+            <div class="formulaHint">
+              Wähle 3 Karten<br />
+              waagerecht, senkrecht<br />
+              oder diagonal.
+            </div>
+          </div>
+          <button class="btn primary" id="newTargetBtn" title="Neue Zielzahl für dasselbe Feld">Neue Zielzahl</button>
+        </div>
+        <div class="board" id="board"></div>
+      </section>
+
+      <aside class="sidePanel">
+        <div class="message" id="message">Drücke „Spiel starten“ und suche den ersten Treffer!</div>
+
+        <div>
+          <div class="sectionTitle">Spieler & Hits</div>
+          <div class="players" id="players"></div>
+        </div>
+
+        <label class="toggleLine">
+          <input type="checkbox" id="autoNext" checked />
+          Nach Treffer automatisch nächster Spieler
+        </label>
+
+        <div class="controls">
+          <button class="btn" id="nextPlayerBtn">Nächster Spieler</button>
+          <button class="btn goodBtn" id="newBoardBtn">Neues Feld</button>
+          <button class="btn" id="showSolutionsBtn">Lösungen</button>
+          <button class="btn danger" id="endBtn">Spiel beenden</button>
+        </div>
+
+        <div class="solutions" id="solutions"></div>
+
+        <div class="smallInfo">
+          <strong>Regel:</strong> Die drei Karten müssen direkt nebeneinander in einer geraden Linie liegen.
+          Gelesen werden darf in beide Richtungen. Beispiel: <strong>7 × 8 + 3 = 59</strong>.
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <div class="overlay" id="startOverlay">
+    <div class="modal">
+      <h2>Bereit zur Zahlenjagd?</h2>
+      <p>
+        Auf einem bunten 7×7- bis 9×9-Feld liegen Zahlenkarten von 1 bis 9.
+        Zu jeder Runde wird eine Zielzahl von 0 bis 100 aufgedeckt. Wer findet passende Reihen?
+      </p>
+
+      <div class="settings">
+        <div class="field">
+          <label for="gridSize">Feldgröße</label>
+          <select id="gridSize">
+            <option value="7">7 × 7</option>
+            <option value="8" selected>8 × 8</option>
+            <option value="9">9 × 9</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="playerCount">Anzahl Spieler</label>
+          <input id="playerCount" type="number" min="1" max="10" value="1" />
+        </div>
+
+        <div class="field">
+          <label for="timeLimit">Spielzeit</label>
+          <select id="timeLimit">
+            <option value="0">Ohne Zeitlimit</option>
+            <option value="60">1 Minute</option>
+            <option value="120" selected>2 Minuten</option>
+            <option value="180">3 Minuten</option>
+            <option value="300">5 Minuten</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="targetMode">Zielzahl-Modus</label>
+          <select id="targetMode">
+            <option value="fair" selected>Zufällig, aber mit Treffer</option>
+            <option value="chaos">Ganz zufällig 0–100</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="sectionTitle">Namen</div>
+      <div class="nameGrid" id="nameInputs"></div>
+
+      <button class="bigStart" id="startBtn">Spiel starten</button>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="gameOverOverlay">
+    <div class="modal">
+      <h2>Spiel vorbei!</h2>
+      <p id="endSummary">Hier ist die Rangliste.</p>
+      <div class="ranking" id="ranking"></div>
+      <button class="bigStart" id="restartBtn">Neue Partie</button>
+    </div>
+  </div>
+
+  <script>
+    const state = {
+      running: false,
+      gridSize: 8,
+      board: [],
+      target: 0,
+      players: [],
+      activePlayer: 0,
+      selection: [],
+      found: new Set(),
+      lineMap: new Map(),
+      solutionMap: new Map(),
+      locked: false,
+      flashGood: new Set(),
+      flashBad: new Set(),
+      timeLeft: 0,
+      totalTime: 0,
+      timerId: null,
+      targetMode: "fair"
+    };
+
+    const el = {
+      board: document.getElementById("board"),
+      target: document.getElementById("target"),
+      players: document.getElementById("players"),
+      message: document.getElementById("message"),
+      remaining: document.getElementById("remaining"),
+      timer: document.getElementById("timer"),
+      startOverlay: document.getElementById("startOverlay"),
+      gameOverOverlay: document.getElementById("gameOverOverlay"),
+      playerCount: document.getElementById("playerCount"),
+      nameInputs: document.getElementById("nameInputs"),
+      gridSize: document.getElementById("gridSize"),
+      timeLimit: document.getElementById("timeLimit"),
+      targetMode: document.getElementById("targetMode"),
+      startBtn: document.getElementById("startBtn"),
+      newTargetBtn: document.getElementById("newTargetBtn"),
+      newBoardBtn: document.getElementById("newBoardBtn"),
+      nextPlayerBtn: document.getElementById("nextPlayerBtn"),
+      endBtn: document.getElementById("endBtn"),
+      autoNext: document.getElementById("autoNext"),
+      showSolutionsBtn: document.getElementById("showSolutionsBtn"),
+      solutions: document.getElementById("solutions"),
+      ranking: document.getElementById("ranking"),
+      restartBtn: document.getElementById("restartBtn"),
+      endSummary: document.getElementById("endSummary")
+    };
+
+    let audioCtx = null;
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === "suspended") audioCtx.resume();
+    }
+
+    function tone(freq, duration = 0.08, type = "sine", gain = 0.045, delay = 0) {
+      if (!audioCtx) return;
+      const t = audioCtx.currentTime + delay;
+      const osc = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, t);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(gain, t + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + duration);
+      osc.connect(g).connect(audioCtx.destination);
+      osc.start(t);
+      osc.stop(t + duration + 0.02);
+    }
+
+    function soundClick() {
+      tone(520, 0.045, "triangle", 0.025);
+    }
+
+    function soundSuccess() {
+      tone(523, 0.08, "sine", 0.04, 0);
+      tone(659, 0.09, "sine", 0.04, 0.07);
+      tone(784, 0.12, "sine", 0.045, 0.14);
+    }
+
+    function soundBad() {
+      tone(170, 0.12, "sawtooth", 0.035, 0);
+      tone(120, 0.15, "sawtooth", 0.03, 0.08);
+    }
+
+    function clampPlayerCount(v) {
+      return Math.max(1, Math.min(10, Number(v) || 1));
+    }
+
+    function renderNameInputs() {
+      const count = clampPlayerCount(el.playerCount.value);
+      el.playerCount.value = count;
+      const old = [...el.nameInputs.querySelectorAll("input")].map(i => i.value);
+      el.nameInputs.innerHTML = "";
+      for (let i = 0; i < count; i++) {
+        const input = document.createElement("input");
+        input.placeholder = "Spieler " + (i + 1);
+        input.value = old[i] || (i === 0 ? "Spieler 1" : "Spieler " + (i + 1));
+        input.maxLength = 22;
+        el.nameInputs.appendChild(input);
+      }
+    }
+
+    function randomInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function idxToRC(idx) {
+      return { r: Math.floor(idx / state.gridSize), c: idx % state.gridSize };
+    }
+
+    function rcToIdx(r, c) {
+      return r * state.gridSize + c;
+    }
+
+    function sortedKey(indices) {
+      return [...indices].sort((a, b) => a - b).join("-");
+    }
+
+    function canonicalKey(cells) {
+      return sortedKey(cells);
+    }
+
+    function generateBoard() {
+      const total = state.gridSize * state.gridSize;
+      state.board = Array.from({ length: total }, () => randomInt(1, 9));
+      buildLineMap();
+    }
+
+    function buildLineMap() {
+      state.lineMap.clear();
+      const n = state.gridSize;
+      const directions = [
+        [0, 1],
+        [1, 0],
+        [1, 1],
+        [1, -1]
+      ];
+
+      for (const [dr, dc] of directions) {
+        for (let r = 0; r < n; r++) {
+          for (let c = 0; c < n; c++) {
+            const r2 = r + dr * 2;
+            const c2 = c + dc * 2;
+            if (r2 < 0 || r2 >= n || c2 < 0 || c2 >= n) continue;
+            const cells = [
+              rcToIdx(r, c),
+              rcToIdx(r + dr, c + dc),
+              rcToIdx(r2, c2)
+            ];
+            state.lineMap.set(canonicalKey(cells), cells);
+          }
+        }
+      }
+    }
+
+    function expressionsForCells(cells) {
+      const orders = [cells, [...cells].reverse()];
+      const out = [];
+
+      for (const order of orders) {
+        const a = state.board[order[0]];
+        const b = state.board[order[1]];
+        const c = state.board[order[2]];
+        const plus = a * b + c;
+        const minus = a * b - c;
+
+        out.push({
+          value: plus,
+          expr: `${a} × ${b} + ${c} = ${plus}`,
+          cells: order
+        });
+
+        out.push({
+          value: minus,
+          expr: `${a} × ${b} − ${c} = ${minus}`,
+          cells: order
+        });
+      }
+
+      return out.filter(x => x.value >= 0 && x.value <= 100);
+    }
+
+    function allPossibleExpressions() {
+      const list = [];
+      for (const [key, cells] of state.lineMap.entries()) {
+        for (const e of expressionsForCells(cells)) {
+          list.push({ key, ...e });
+        }
+      }
+      return list;
+    }
+
+    function computeSolutionsForTarget() {
+      state.solutionMap.clear();
+
+      for (const [key, cells] of state.lineMap.entries()) {
+        const match = expressionsForCells(cells).find(e => e.value === state.target);
+        if (match) {
+          state.solutionMap.set(key, {
+            key,
+            cells,
+            expr: match.expr
+          });
+        }
+      }
+    }
+
+    function chooseTarget() {
+      state.found.clear();
+      state.selection = [];
+      state.flashGood.clear();
+      state.flashBad.clear();
+
+      if (state.targetMode === "chaos") {
+        state.target = randomInt(0, 100);
+      } else {
+        const possible = allPossibleExpressions();
+        const chosen = possible[randomInt(0, possible.length - 1)];
+        state.target = chosen ? chosen.value : randomInt(0, 100);
+      }
+
+      computeSolutionsForTarget();
+      updateAll();
+      setMessage(
+        state.solutionMap.size
+          ? "Neue Zielzahl! Wer findet die erste passende Reihe?"
+          : "Knifflig: Für diese Zielzahl gibt es auf dem Feld keinen Treffer. Neue Zielzahl drücken!",
+        state.solutionMap.size ? "" : "bad"
+      );
+    }
+
+    function setMessage(text, type = "") {
+      el.message.textContent = text;
+      el.message.className = "message" + (type ? " " + type : "");
+    }
+
+    function renderBoard() {
+      document.documentElement.style.setProperty("--n", state.gridSize);
+      el.board.style.setProperty("--n", state.gridSize);
+
+      const selected = new Set(state.selection);
+      const foundCells = new Set();
+      for (const key of state.found) {
+        key.split("-").forEach(x => foundCells.add(Number(x)));
+      }
+
+      el.board.innerHTML = state.board.map((num, idx) => {
+        const classes = [
+          "card",
+          "num-" + num,
+          selected.has(idx) ? "selected" : "",
+          foundCells.has(idx) ? "found" : "",
+          state.flashGood.has(idx) ? "good" : "",
+          state.flashBad.has(idx) ? "bad" : ""
+        ].filter(Boolean).join(" ");
+
+        const rc = idxToRC(idx);
+        return `<button class="${classes}" data-idx="${idx}" aria-label="Karte ${num}, Reihe ${rc.r + 1}, Spalte ${rc.c + 1}">${num}</button>`;
+      }).join("");
+    }
+
+    function renderPlayers() {
+      el.players.innerHTML = "";
+      state.players.forEach((p, i) => {
+        const btn = document.createElement("button");
+        btn.className = "playerBtn" + (i === state.activePlayer ? " active" : "");
+        btn.dataset.player = i;
+        btn.innerHTML = `
+          <span class="playerName">${escapeHtml(p.name)}</span>
+          <span class="score">${p.score}</span>
+        `;
+        btn.addEventListener("click", () => {
+          state.activePlayer = i;
+          soundClick();
+          renderPlayers();
+          setMessage(`${p.name} ist jetzt dran.`);
+        });
+        el.players.appendChild(btn);
+      });
+    }
+
+    function updateTopStats() {
+      el.target.textContent = state.running ? state.target : "?";
+      const remaining = Math.max(0, state.solutionMap.size - state.found.size);
+      el.remaining.textContent = remaining;
+      el.timer.textContent = state.totalTime ? formatTime(state.timeLeft) : "∞";
+    }
+
+    function updateSolutionsBox() {
+      const remainingSolutions = [...state.solutionMap.values()].filter(s => !state.found.has(s.key));
+      if (!remainingSolutions.length) {
+        el.solutions.innerHTML = "Keine offenen Lösungen mehr.";
+        return;
+      }
+
+      el.solutions.innerHTML = remainingSolutions.slice(0, 80).map(s => {
+        const pos = s.cells.map(i => {
+          const rc = idxToRC(i);
+          return `R${rc.r + 1}/S${rc.c + 1}`;
+        }).join(" → ");
+        return `<div>• <strong>${s.expr}</strong><br><span style="color:#cbd5e1">${pos}</span></div>`;
+      }).join("");
+    }
+
+    function updateAll() {
+      renderBoard();
+      renderPlayers();
+      updateTopStats();
+      updateSolutionsBox();
+    }
+
+    function formatTime(seconds) {
+      const m = Math.floor(seconds / 60);
+      const s = seconds % 60;
+      return `${m}:${String(s).padStart(2, "0")}`;
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, ch => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+      }[ch]));
+    }
+
+    function startGame() {
+      initAudio();
+
+      state.gridSize = Number(el.gridSize.value);
+      state.targetMode = el.targetMode.value;
+      const count = clampPlayerCount(el.playerCount.value);
+      const inputs = [...el.nameInputs.querySelectorAll("input")];
+
+      state.players = Array.from({ length: count }, (_, i) => ({
+        name: (inputs[i]?.value || `Spieler ${i + 1}`).trim() || `Spieler ${i + 1}`,
+        score: 0
+      }));
+
+      state.activePlayer = 0;
+      state.running = true;
+      state.locked = false;
+      state.totalTime = Number(el.timeLimit.value);
+      state.timeLeft = state.totalTime;
+
+      clearInterval(state.timerId);
+      if (state.totalTime > 0) {
+        state.timerId = setInterval(() => {
+          if (!state.running) return;
+          state.timeLeft--;
+          updateTopStats();
+          if (state.timeLeft <= 0) endGame();
+        }, 1000);
+      }
+
+      generateBoard();
+      chooseTarget();
+
+      el.startOverlay.classList.add("hidden");
+      el.gameOverOverlay.classList.add("hidden");
+      setMessage(`${state.players[0].name} beginnt. Viel Erfolg!`);
+      soundSuccess();
+    }
+
+    function selectCard(idx) {
+      if (!state.running || state.locked) return;
+
+      soundClick();
+
+      const existing = state.selection.indexOf(idx);
+      if (existing >= 0) {
+        state.selection.splice(existing, 1);
+        renderBoard();
+        return;
+      }
+
+      if (state.selection.length >= 3) return;
+
+      state.selection.push(idx);
+      renderBoard();
+
+      if (state.selection.length === 3) {
+        state.locked = true;
+        setTimeout(validateSelection, 160);
+      }
+    }
+
+    function validateSelection() {
+      const key = sortedKey(state.selection);
+      const cells = state.lineMap.get(key);
+
+      if (!cells) {
+        invalidMove("Diese 3 Karten liegen nicht direkt in einer geraden Reihe.");
+        return;
+      }
+
+      if (state.found.has(key)) {
+        invalidMove("Diese Reihe wurde für diese Zielzahl schon gewertet.");
+        return;
+      }
+
+      const match = expressionsForCells(cells).find(e => e.value === state.target);
+
+      if (!match) {
+        invalidMove("Leider kein Treffer: A × B ± C ergibt nicht die Zielzahl.");
+        return;
+      }
+
+      validMove(key, cells, match.expr);
+    }
+
+    function invalidMove(text) {
+      state.flashBad = new Set(state.selection);
+      renderBoard();
+      setMessage(text, "bad");
+      soundBad();
+      el.board.classList.add("shake");
+
+      setTimeout(() => {
+        el.board.classList.remove("shake");
+        state.selection = [];
+        state.flashBad.clear();
+        state.locked = false;
+        renderBoard();
+      }, 520);
+    }
+
+    function validMove(key, cells, expr) {
+      const playerIndex = state.activePlayer;
+      const player = state.players[playerIndex];
+
+      state.found.add(key);
+      player.score++;
+      state.flashGood = new Set(cells);
+      state.selection = [];
+
+      renderBoard();
+      renderPlayers();
+      updateTopStats();
+      updateSolutionsBox();
+      setMessage(`Treffer für ${player.name}: ${expr}`, "good");
+      soundSuccess();
+      confetti();
+
+      const playerButton = el.players.querySelector(`[data-player="${playerIndex}"]`);
+      if (playerButton) {
+        const plus = document.createElement("span");
+        plus.className = "floatingPlus";
+        plus.textContent = "+1";
+        playerButton.appendChild(plus);
+        setTimeout(() => plus.remove(), 900);
+      }
+
+      const remaining = state.solutionMap.size - state.found.size;
+
+      setTimeout(() => {
+        state.flashGood.clear();
+
+        if (el.autoNext.checked && state.players.length > 1) {
+          state.activePlayer = (state.activePlayer + 1) % state.players.length;
+        }
+
+        state.locked = false;
+        updateAll();
+
+        if (remaining <= 0 && state.solutionMap.size > 0) {
+          setMessage("Alle Treffer für diese Zielzahl gefunden! Drücke „Neue Zielzahl“.", "good");
+        }
+      }, 620);
+    }
+
+    function nextPlayer() {
+      if (!state.players.length) return;
+      state.activePlayer = (state.activePlayer + 1) % state.players.length;
+      state.selection = [];
+      state.locked = false;
+      soundClick();
+      updateAll();
+      setMessage(`${state.players[state.activePlayer].name} ist dran.`);
+    }
+
+    function newBoard() {
+      if (!state.running) return;
+      initAudio();
+      generateBoard();
+      chooseTarget();
+      soundSuccess();
+    }
+
+    function newTarget() {
+      if (!state.running) return;
+      initAudio();
+      chooseTarget();
+      soundClick();
+    }
+
+    function endGame() {
+      if (!state.running) return;
+      state.running = false;
+      clearInterval(state.timerId);
+
+      const sorted = [...state.players].sort((a, b) => b.score - a.score);
+      const max = sorted[0]?.score ?? 0;
+      const winners = sorted.filter(p => p.score === max).map(p => p.name);
+
+      el.endSummary.textContent = winners.length > 1
+        ? `Unentschieden! ${winners.join(", ")} teilen sich Platz 1 mit ${max} Hits.`
+        : `${winners[0] || "Niemand"} gewinnt mit ${max} Hits!`;
+
+      el.ranking.innerHTML = sorted.map((p, i) => `
+        <div class="rankRow">
+          <span>${i === 0 ? "🏆" : "#" + (i + 1)}</span>
+          <span>${escapeHtml(p.name)}</span>
+          <span>${p.score} Hits</span>
+        </div>
+      `).join("");
+
+      el.gameOverOverlay.classList.remove("hidden");
+      soundSuccess();
+    }
+
+    function confetti() {
+      const rect = el.board.getBoundingClientRect();
+      const x = rect.left + rect.width / 2;
+      const y = rect.top + rect.height / 2;
+      const colors = ["#facc15", "#22c55e", "#38bdf8", "#ec4899", "#8b5cf6", "#f97316"];
+
+      for (let i = 0; i < 26; i++) {
+        const p = document.createElement("div");
+        p.className = "particle";
+        p.style.left = x + "px";
+        p.style.top = y + "px";
+        p.style.background = colors[randomInt(0, colors.length - 1)];
+        p.style.setProperty("--dx", randomInt(-180, 180) + "px");
+        p.style.setProperty("--dy", randomInt(-190, 90) + "px");
+        p.style.animationDelay = (Math.random() * 0.06) + "s";
+        document.body.appendChild(p);
+        setTimeout(() => p.remove(), 1100);
+      }
+    }
+
+    el.board.addEventListener("click", e => {
+      const card = e.target.closest(".card");
+      if (!card) return;
+      selectCard(Number(card.dataset.idx));
+    });
+
+    el.playerCount.addEventListener("input", renderNameInputs);
+    el.startBtn.addEventListener("click", startGame);
+    el.newTargetBtn.addEventListener("click", newTarget);
+    el.newBoardBtn.addEventListener("click", newBoard);
+    el.nextPlayerBtn.addEventListener("click", nextPlayer);
+    el.endBtn.addEventListener("click", endGame);
+
+    el.showSolutionsBtn.addEventListener("click", () => {
+      el.solutions.classList.toggle("show");
+      updateSolutionsBox();
+      soundClick();
+    });
+
+    el.restartBtn.addEventListener("click", () => {
+      el.gameOverOverlay.classList.add("hidden");
+      el.startOverlay.classList.remove("hidden");
+      soundClick();
+    });
+
+    document.addEventListener("pointerdown", initAudio, { once: true });
+
+    renderNameInputs();
+    updateAll();
+  </script>
+</body>
+</html>
