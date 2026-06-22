@@ -1,15 +1,16 @@
 <!-- =================================================
      Deutsch Satzglieder Lerntrainer — ams OSRAM
-     Version: 3.1  |  Created: 2026-06-13
+     Version: 3.13  |  Created: 2026-06-13
      Changed: 2026-06-13 — v3.1: Rundensystem, Nomen-Kategorien, Zeitformen & Gen-Trophäen verbessert
      Changed: 2026-06-14 — v3.2: Analyse-Subnav (Felder/Quiz/Substantive/Zeitformen/Fälle-Mix/Genitiv✓); Genitiv-Pokale → Übersicht
+     Changed: 2026-06-15 — v3.13: KI-Modus im KI-Tutor-Tab — Whisper STT (whisper-base, lazy-load), Kind spricht eigenen Satz, LLM analysiert Satzglieder farbig, Nebensatz-Erkennung + Aufteilung
      ================================================= -->
 <!DOCTYPE html>
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Satzglieder Lerntrainer v3.6</title>
+<title>Satzglieder Lerntrainer v3.13</title>
 <script>
   // Theme ohne Flicker setzen
   (function() {
@@ -889,6 +890,12 @@ body {
   justify-content: center;
 }
 .brillen-btn.active { background: var(--blue); border-color: var(--blue); color: white; }
+.brillen-btn.correct { background: var(--green); border-color: var(--green); color: white; pointer-events: none; }
+.brillen-btn.wrong   { background: var(--red);   border-color: var(--red);   color: white; }
+.brillen-btn.locked  { opacity: 0.42; pointer-events: none; }
+.brill-voice-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+.brill-voice-label { font-size: 0.82rem; font-weight: 700; color: var(--text2); white-space: nowrap; }
+.brill-voice-hint  { font-size: 0.82rem; font-weight: 700; min-width: 130px; }
 
 /* ── Rollen ── */
 .rollen-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -955,6 +962,36 @@ body {
 .frosch-icon { font-size: 2.2rem; display: inline-block; }
 .katze-icon { font-size: 2.2rem; display: inline-block; }
 #katze-dz { font-size: 2rem; line-height: 1; vertical-align: middle; }
+
+/* ── Schussmodus ── */
+.chip.shoot-mode { cursor: crosshair !important; user-select: none; }
+.shot-target-global { position: fixed; font-size: 2.5rem; pointer-events: none; z-index: 500;
+  transition: left 0.18s ease-out, top 0.18s ease-out, opacity 0.15s;
+  filter: drop-shadow(0 0 7px rgba(239,68,68,0.85)); opacity: 0; }
+.shot-target-global.visible { opacity: 1; }
+.chip.shoot-mode:hover { background: rgba(239,68,68,0.13); border-color: #ef4444; }
+@keyframes missShake {
+  0%,100% { transform: translateX(0); }
+  20%     { transform: translateX(-6px); }
+  40%     { transform: translateX(6px); }
+  60%     { transform: translateX(-4px); }
+  80%     { transform: translateX(4px); }
+}
+.chip.shot-miss { animation: missShake 0.42s ease; border-color: #ef4444 !important; background: rgba(239,68,68,0.3) !important; }
+@keyframes chipFall {
+  0%   { transform: scale(1) rotate(0deg) translateY(0); opacity:1; }
+  60%  { transform: scale(0.9) rotate(25deg) translateY(10px); opacity:.7; }
+  100% { transform: scale(0) rotate(45deg) translateY(40px); opacity:0; }
+}
+.chip.shot-hit { animation: chipFall 0.5s cubic-bezier(.4,0,.8,1) forwards; }
+#shoot-mode-btn.active { background: linear-gradient(135deg,#b91c1c,#ef4444) !important; color: #fff !important; border-color: #dc2626 !important; }
+@keyframes coinFly {
+  0%   { opacity: 1; transform: translate(0,0) scale(1.3); }
+  85%  { opacity: .9; }
+  100% { opacity: 0; transform: translate(var(--cdx),var(--cdy)) scale(0.25); }
+}
+.coin-anim { position: fixed; z-index: 9999; font-size: 1.5rem;
+  pointer-events: none; animation: coinFly 0.75s cubic-bezier(.15,.8,.35,1) forwards; }
 
 /* ── Magnet Modi Buttons ── */
 .mag-mode-row { display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap; }
@@ -1140,6 +1177,91 @@ body {
   border-radius:20px; padding:3px 12px; font-size:0.78rem; font-weight:700;
   color:var(--correct-b,#16a34a); }
 
+/* ── KI-MODUS ── */
+.ki-mode-toggle { display:flex; gap:6px; margin-bottom:12px; }
+.ki-mode-btn {
+  flex:1; padding:10px 16px; border-radius:10px; font-size:0.9rem; font-weight:700;
+  border:2px solid var(--border); background:var(--bg2); color:var(--text2);
+  cursor:pointer; transition:all .15s; text-align:center;
+}
+.ki-mode-btn.active {
+  background:var(--blue); border-color:var(--blue); color:#fff;
+}
+.ki-mode-btn:hover:not(.active) { border-color:var(--blue); color:var(--text); }
+
+/* KI-Modus panel */
+.kim-panel     { background:var(--card); border:1px solid var(--border);
+  border-radius:12px; padding:20px; margin-bottom:14px; }
+.kim-ai-bubble { background:var(--bg2); border:1px solid var(--border);
+  border-left:4px solid #7c3aed; border-radius:10px; padding:14px 16px;
+  margin-bottom:18px; }
+.kim-ai-lbl    { font-size:0.72rem; font-weight:800; text-transform:uppercase;
+  letter-spacing:.06em; color:#7c3aed; margin-bottom:4px; }
+.kim-ai-text   { font-size:1rem; line-height:1.6; color:var(--text); }
+
+/* Big mic button */
+.kim-record-btn {
+  width:80px; height:80px; border-radius:50%; font-size:2.2rem;
+  border:3px solid var(--border); background:var(--bg2); color:var(--text2);
+  cursor:pointer; transition:all .2s; display:flex;
+  align-items:center; justify-content:center; margin:0 auto 10px;
+  box-shadow:0 4px 16px rgba(0,0,0,.2);
+}
+.kim-record-btn:hover:not(:disabled) {
+  border-color:var(--blue); background:rgba(0,112,192,.08); transform:scale(1.04);
+}
+.kim-record-btn.recording {
+  border-color:#c00000; background:rgba(192,0,0,.1); color:#c00000;
+  animation:kim-pulse 1.3s infinite ease-in-out;
+}
+.kim-record-btn.processing {
+  border-color:var(--orange,#d97706); color:var(--orange,#d97706);
+  animation:kim-spin 1s infinite linear;
+}
+.kim-record-btn:disabled { opacity:.4; cursor:not-allowed; }
+@keyframes kim-pulse {
+  0%,100% { box-shadow:0 4px 16px rgba(192,0,0,.2); transform:scale(1); }
+  50%      { box-shadow:0 4px 30px rgba(192,0,0,.5); transform:scale(1.06); }
+}
+@keyframes kim-spin { to { transform:rotate(360deg); } }
+.kim-rec-hint { font-size:0.85rem; color:var(--text2); text-align:center;
+  margin-bottom:16px; min-height:20px; }
+.kim-rec-timer { font-size:0.88rem; font-weight:700; color:#c00000;
+  text-align:center; min-height:20px; margin-bottom:8px; }
+
+/* Transcribed sentence + analysis */
+.kim-satz-box { background:var(--bg2); border:1px solid var(--border);
+  border-radius:10px; padding:14px 16px; margin-bottom:14px;
+  font-size:1.05rem; font-weight:600; line-height:1.6; }
+.kim-satz-label { font-size:0.72rem; font-weight:800; text-transform:uppercase;
+  letter-spacing:.06em; color:var(--text2); margin-bottom:6px; }
+
+/* Color chips for analysis result */
+.kim-analysis-area { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
+.kim-word-chip {
+  border-radius:8px; padding:7px 14px; font-weight:700; font-size:0.92rem;
+  color:#fff; position:relative;
+}
+.kim-word-chip .kim-chip-role {
+  display:block; font-size:0.66rem; font-weight:600; opacity:.85;
+  margin-top:2px; text-align:center;
+}
+.kim-word-chip.unassigned {
+  background:var(--bg3); color:var(--text2); border:2px dashed var(--border);
+}
+
+/* Nebensatz callout */
+.kim-nebensatz-bubble {
+  background:rgba(124,58,237,.08); border:1px solid rgba(124,58,237,.35);
+  border-left:4px solid #7c3aed; border-radius:10px; padding:14px 16px;
+  margin-bottom:12px; font-size:0.88rem; line-height:1.6;
+}
+.kim-neb-actions { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+
+/* Whisper status */
+.kim-whisper-status { font-size:0.78rem; color:var(--text2); text-align:center;
+  margin-bottom:6px; min-height:16px; }
+
 /* ── WISHER CHAT PANEL ── */
 .wisher-panel {
   position:fixed; top:0; right:0; bottom:0;
@@ -1196,6 +1318,21 @@ body {
   flex-shrink:0;
 }
 .wisher-send-btn:hover { background:#0058aa; }
+.wisher-mic-btn {
+  background:var(--bg3); color:var(--text2); border:1px solid var(--border);
+  border-radius:10px; padding:10px 13px; font-size:1rem; cursor:pointer;
+  transition:all .15s; flex-shrink:0;
+}
+.wisher-mic-btn:hover { background:var(--border); color:var(--text); }
+.wisher-mic-btn.recording {
+  background:rgba(192,0,0,.12); border-color:#c00000; color:#c00000;
+  animation: mic-pulse 1s infinite ease-in-out;
+}
+.wisher-mic-btn:disabled { opacity:.4; cursor:default; }
+@keyframes mic-pulse {
+  0%,100% { box-shadow:0 0 0 0 rgba(192,0,0,.3); }
+  50%      { box-shadow:0 0 0 6px rgba(192,0,0,.0); }
+}
 .wisher-toggle-btn {
   position:fixed; right:16px; bottom:20px; z-index:299;
   background:var(--blue); color:#fff; border:none; border-radius:50%;
@@ -1556,13 +1693,14 @@ body {
     <div class="game-main">
       <div class="game-sentence-label">Satz</div>
       <div class="game-sentence" id="ana-sentence">—</div>
-      <div class="steps-row" id="ana-steps"></div>
+      <div class="steps-row" id="ana-steps" style="display:none"></div>
       <div class="chip-pool" id="ana-chips"></div>
-      <div style="margin-bottom:8px;"><span class="chip none-chip" draggable="true" ondragstart="anaChipDrag(event,'—')" onclick="anaClickChip('—')">da ist keins</span></div>
+      <div style="margin-bottom:8px;"><span class="chip none-chip" draggable="true" ondragstart="anaChipDrag(event,'—')" onclick="anaClickChip('—',event)">da ist keins</span></div>
       <div class="game-feedback" id="ana-feedback">Ziehe zuerst das Verb in die Zone „Verb".</div>
       <div class="game-btn-row">
         <button class="game-btn primary" onclick="anaNextBtn()">🎲 Neuer Satz</button>
         <button class="game-btn secondary" onclick="anaSpeak()">🔊 Vorlesen</button>
+        <button class="game-btn neutral" id="shoot-mode-btn" onclick="toggleShootMode()">🎯 Schussmodus</button>
       </div>
     </div>
     <div class="game-side">
@@ -1604,6 +1742,12 @@ body {
       <div class="brillen-mode-toggle">
         <button class="brillen-btn active" id="brill-btn-wortart" onclick="brillenMode('wortart')">🔤 Wortart</button>
         <button class="brillen-btn" id="brill-btn-satzglied" onclick="brillenMode('satzglied')">🧩 Satzglied</button>
+      </div>
+      <div class="brill-voice-row">
+        <span class="brill-voice-label">⚡🔄 Aktiv oder Passiv?</span>
+        <button class="brillen-btn" id="brill-voice-aktiv"  onclick="brillenVoice('aktiv')">Aktiv</button>
+        <button class="brillen-btn" id="brill-voice-passiv" onclick="brillenVoice('passiv')">Passiv</button>
+        <span class="brill-voice-hint" id="brill-voice-hint"></span>
       </div>
       <div style="font-size:0.8rem;color:var(--text2);margin-bottom:8px;">Ziehe die Wörter in die richtige Zone →</div>
       <div class="chip-pool" id="brill-chips"></div>
@@ -1793,8 +1937,71 @@ body {
       Richtig: <b id="ki-score-r">0</b> &nbsp;|&nbsp; Falsch: <b id="ki-score-w">0</b>
     </div>
 
-    <!-- Übungs-Bereich -->
-    <div class="ki-exercise">
+    <!-- Modus-Umschalter -->
+    <div class="ki-mode-toggle">
+      <button class="ki-mode-btn active" id="kim-btn-ueben"
+        onclick="window.kimSetMode&&window.kimSetMode('ueben')">📚 Satzglieder üben</button>
+      <button class="ki-mode-btn" id="kim-btn-kimode"
+        onclick="window.kimSetMode&&window.kimSetMode('kimode')">🎤 KI-Modus: Eigener Satz</button>
+    </div>
+
+    <!-- ── KI-MODUS PANEL ── -->
+    <div id="ki-kimode-panel" style="display:none" class="kim-panel">
+
+      <!-- Whisper Status -->
+      <div class="kim-whisper-status" id="kim-whisper-status">Whisper-Modell wird beim ersten Klick geladen (whisper-base, ~75 MB).</div>
+
+      <!-- Step A: Prompt + Record -->
+      <div id="kim-step-record">
+        <div class="kim-ai-bubble">
+          <div class="kim-ai-lbl">🤖 KI-Tutor</div>
+          <div class="kim-ai-text" id="kim-ai-msg">Schlag einen Satz vor! Drücke den Mikrofon-Knopf und sprich laut und deutlich. 🎤</div>
+        </div>
+
+        <button class="kim-record-btn" id="kim-record-btn"
+          onclick="window.kimRecord&&window.kimRecord()">🎤</button>
+        <div class="kim-rec-timer" id="kim-rec-timer"></div>
+        <div class="kim-rec-hint" id="kim-rec-hint">Drücke den Knopf und sprich deinen Satz!</div>
+      </div>
+
+      <!-- Step B: Result (hidden until analysis done) -->
+      <div id="kim-step-result" style="display:none">
+
+        <!-- Transcribed sentence -->
+        <div class="kim-satz-label">Dein Satz:</div>
+        <div class="kim-satz-box" id="kim-satz-display"></div>
+
+        <!-- Nebensatz callout (shown conditionally) -->
+        <div class="kim-nebensatz-bubble" id="kim-nebensatz-bubble" style="display:none">
+          <div class="kim-ai-lbl">🤖 KI-Tutor</div>
+          <div class="kim-ai-text" id="kim-neb-text">Oh, das ist ja ein langer Satz mit einem Nebensatz! Sollen wir den zerlegen? Ich hab das für dich schon vorbereitet …</div>
+          <div class="kim-neb-actions">
+            <button class="ki-hint-btn" onclick="window.kimSplitSentence&&window.kimSplitSentence()">✂️ Ja, aufteilen!</button>
+            <button class="ki-skip-btn" onclick="window.kimAnalyzeWhole&&window.kimAnalyzeWhole()">→ Als Ganzes analysieren</button>
+          </div>
+        </div>
+
+        <!-- Color-coded analysis chips -->
+        <div class="kim-satz-label" id="kim-analysis-label" style="display:none">Satzglieder-Analyse:</div>
+        <div class="kim-analysis-area" id="kim-analysis-area"></div>
+
+        <!-- LLM explanation bubble -->
+        <div class="ki-llm-bubble" id="kim-llm-bubble" style="display:none">
+          <div class="ki-llm-lbl">🤖 Erklärung</div>
+          <div id="kim-llm-text" style="color:var(--text)"></div>
+        </div>
+
+        <!-- Actions -->
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+          <button class="ki-hint-btn" onclick="window.kimRecord&&window.kimRecord()" style="white-space:nowrap">🎤 Neuer Satz</button>
+          <button class="ki-hint-btn" onclick="window.wisherToggle&&window.wisherToggle()"
+            style="background:var(--blue,#0070c0);color:#fff;" title="Chat öffnen">💬 Fragen stellen</button>
+        </div>
+      </div>
+    </div><!-- /#ki-kimode-panel -->
+
+    <!-- Übungs-Bereich (existing exercise panel) -->
+    <div class="ki-exercise" id="ki-exercise-panel">
       <div class="ki-sentence-lbl">Satz — klicke jedes Wort und weise ein Satzglied zu:</div>
       <div class="ki-sentence" id="ki-sentence">— Lade eine Übung —</div>
       <div class="ki-chip-area" id="ki-chips"></div>
@@ -2478,6 +2685,76 @@ const ANA_STEPS=[
 ];
 const ADV_SUBTYPES=['temporal','lokal','modal','kausal'];
 let anaIdx=0,anaStep=0,anaFilled={},anaAdvDone=false;
+let anaShootMode=false;
+let _gst=null,_gstActiveChip=null,_gstTimer=null;
+
+function _gstBounce(){
+  if(!_gstActiveChip||!_gst)return;
+  const r=_gstActiveChip.getBoundingClientRect();
+  _gst.style.left=(r.left+r.width/2-20|0)+'px';
+  _gst.style.top=(r.top+r.height/2-20|0)+'px';
+}
+function _gstShow(chip){
+  clearTimeout(_gstTimer);_gstActiveChip=chip;
+  if(!_gst){_gst=document.createElement('div');_gst.className='shot-target-global';_gst.textContent='\u{1F3AF}';document.body.appendChild(_gst);}
+  _gstBounce();_gst.classList.add('visible');
+}
+function _gstHide(){
+  clearTimeout(_gstTimer);
+  if(_gst)_gst.classList.remove('visible');
+  _gstActiveChip=null;
+}
+function _gstStop(){
+  clearTimeout(_gstTimer);
+  if(_gst){_gst.remove();_gst=null;}
+  _gstActiveChip=null;
+}
+function _gstFlee(){} // no flee — target stays still
+function _setupShootListeners(){
+  document.querySelectorAll('#tab-analyse .chip.shoot-mode,#tab-analyse .none-chip.shoot-mode').forEach(c=>{
+    c._gstEnter=()=>_gstShow(c);
+    c._gstLeave=()=>_gstHide();
+    c.addEventListener('mouseenter',c._gstEnter);
+    c.addEventListener('mouseleave',c._gstLeave);
+  });
+}
+function _removeShootListeners(){
+  document.querySelectorAll('#tab-analyse .chip,#tab-analyse .none-chip').forEach(c=>{
+    if(c._gstEnter){c.removeEventListener('mouseenter',c._gstEnter);delete c._gstEnter;}
+    if(c._gstLeave){c.removeEventListener('mouseleave',c._gstLeave);delete c._gstLeave;}
+  });
+}
+function toggleShootMode(){
+  anaShootMode=!anaShootMode;
+  const btn=document.getElementById('shoot-mode-btn');
+  if(anaShootMode){
+    btn.classList.add('active'); btn.textContent='🎯 Schussmodus: AN';
+    document.querySelectorAll('#tab-analyse .chip').forEach(c=>c.classList.add('shoot-mode'));
+    const nc=document.querySelector('#tab-analyse .none-chip'); if(nc) nc.classList.add('shoot-mode');
+    _setupShootListeners();
+  } else {
+    btn.classList.remove('active'); btn.textContent='🎯 Schussmodus';
+    _removeShootListeners();
+    document.querySelectorAll('#tab-analyse .chip, #tab-analyse .none-chip').forEach(c=>c.classList.remove('shoot-mode'));
+    _gstStop();
+  }
+}
+function handleMissShot(word){
+  const ce=document.getElementById('ana-chip-'+norm(word))||(word==='—'?document.querySelector('#tab-analyse .none-chip'):null);
+  if(!ce||!anaShootMode)return;
+  ce.classList.add('shot-miss');
+  setTimeout(()=>ce.classList.remove('shot-miss'),500);
+}
+function fireCoin(fromEl){
+  const scoreEl=document.getElementById('ana-round-score');
+  if(!fromEl||!scoreEl) return;
+  const fr=fromEl.getBoundingClientRect(), tr=scoreEl.getBoundingClientRect();
+  const coin=document.createElement('div'); coin.className='coin-anim'; coin.textContent='��';
+  coin.style.left=(fr.left+fr.width/2-12)+'px'; coin.style.top=(fr.top+fr.height/2-12)+'px';
+  coin.style.setProperty('--cdx',((tr.left+tr.width/2)-(fr.left+fr.width/2))+'px');
+  coin.style.setProperty('--cdy',((tr.top+tr.height/2)-(fr.top+fr.height/2))+'px');
+  document.body.appendChild(coin); setTimeout(()=>coin.remove(),850);
+}
 
 function anaInit(){
   roundPrepare('ana');
@@ -2488,15 +2765,28 @@ function anaInit(){
   pool.innerHTML='';
   s.chips.forEach(w=>{
     const c=document.createElement('div');c.className='chip';c.draggable=true;c.id='ana-chip-'+norm(w);
-    c.textContent=w;c.ondragstart=(e)=>anaChipDrag(e,w);c.onclick=()=>anaClickChip(w);pool.appendChild(c);
+    c.textContent=w;c.ondragstart=(e)=>anaChipDrag(e,w);c.onclick=(e)=>anaClickChip(w,e);pool.appendChild(c);
+    if(anaShootMode) c.classList.add('shoot-mode');
   });
+  if(anaShootMode){
+    const nc=document.querySelector('#tab-analyse .none-chip');if(nc)nc.classList.add('shoot-mode');
+    _setupShootListeners();
+  }
   renderAnaSteps(); renderAnaDropzones(s);
   document.getElementById('ana-feedback').className='game-feedback';
   document.getElementById('ana-feedback').textContent='Ziehe zuerst das Verb in die Zone „Verb".';
 }
-function anaClickChip(w){
+function anaClickChip(w,ev){
   const step=ANA_STEPS[anaStep];
   if(!step)return;
+  if(anaShootMode){
+    if(!_gst||!_gstActiveChip){handleMissShot(w);return;}
+    if(ev){
+      const gr=_gst.getBoundingClientRect();
+      const tx=gr.left+gr.width/2, ty=gr.top+gr.height/2;
+      if(Math.hypot(ev.clientX-tx,ev.clientY-ty)>48){handleMissShot(w);return;}
+    }
+  }
   anaDrop(null,step.key,w);
 }
 function anaChipDrag(e,word){e.dataTransfer.setData('text/plain',word);}
@@ -2571,13 +2861,36 @@ function anaDrop(e,key,wordOverride){
   }
   const exp=s.solution[key]||[];
   const ok=exp.length===0?(word==='—'):exp.some(x=>norm(x)===norm(word));
-  if(!ok){document.getElementById('ana-feedback').className='game-feedback err';document.getElementById('ana-feedback').textContent='❌ Noch nicht. '+ANA_STEPS[anaStep]?.hint;breakStreak();return;}
+  if(!ok){document.getElementById('ana-feedback').className='game-feedback err';document.getElementById('ana-feedback').textContent='❌ Noch nicht. '+ANA_STEPS[anaStep]?.hint;breakStreak();handleMissShot(word);return;}
   if(!anaFilled[key].includes(word))anaFilled[key].push(word);
   const chipEl=document.getElementById('ana-chip-'+norm(word));
   if(chipEl)chipEl.classList.add('faded');
   const allIn=exp.length===0?anaFilled[key].includes('—'):exp.every(x=>anaFilled[key].some(y=>norm(y)===norm(x)));
   if(allIn){
     anaStep++; addScore(1); triggerFroschHop();
+    if(anaShootMode){
+      const ce=document.getElementById('ana-chip-'+norm(word))||(word==='—'?document.querySelector('#tab-analyse .none-chip'):null);
+      if(ce){
+        ce.classList.add('shot-hit');
+        fireCoin(ce);
+        // Reset none-chip after animation so it can be used again for subsequent steps
+        if(word==='—'){
+          setTimeout(()=>{
+            ce.classList.remove('shot-hit','faded');
+            if(anaShootMode && !ce._gstEnter){
+              ce._gstEnter=()=>_gstShow(ce);
+              ce._gstLeave=()=>_gstHide();
+              ce.addEventListener('mouseenter',ce._gstEnter);
+              ce.addEventListener('mouseleave',ce._gstLeave);
+            }
+          },620);
+        } else {
+          setTimeout(()=>ce.classList.add('faded'),480);
+        }
+      }
+    } else {
+      const chipEl=document.getElementById('ana-chip-'+norm(word)); if(chipEl)chipEl.classList.add('faded');
+    }
     if(anaStep>=ANA_STEPS.length){
       document.getElementById('ana-feedback').className='game-feedback ok';
       document.getElementById('ana-feedback').textContent='🎉 Super! Alle Satzglieder gefunden!'; addScore(2); anaSolved=true;
@@ -2698,33 +3011,69 @@ function feldSpeak(){speak(SENTENCE_POOL[feldIdx].text);}
 // 🔤 BRILLEN-SPIEL (8 Sätze)
 // ══════════════════════════════════════
 const BRILLEN_POOL = [
-  {text:"Der alte Hund beißt den Mann.",chips:["Der","alte","Hund","beißt","den","Mann","Der alte Hund","den Mann"],
+  {text:"Der alte Hund beißt den Mann.",voice:"aktiv",chips:["Der","alte","Hund","beißt","den","Mann","Der alte Hund","den Mann"],
     wortart:{artikel:["Der","den"],adjektiv:["alte"],substantiv:["Hund","Mann"],verb:["beißt"]},
     satzglied:{subjekt:["Der alte Hund"],prädikat:["beißt"],akkusativ:["den Mann"]}},
-  {text:"Die kleine Katze schläft im Bett.",chips:["Die","kleine","Katze","schläft","Die kleine Katze"],
+  {text:"Die kleine Katze schläft im Bett.",voice:"aktiv",chips:["Die","kleine","Katze","schläft","Die kleine Katze"],
     wortart:{artikel:["Die"],adjektiv:["kleine"],substantiv:["Katze"],verb:["schläft"]},
     satzglied:{subjekt:["Die kleine Katze"],prädikat:["schläft"]}},
-  {text:"Maria gibt dem Kind ein Buch.",chips:["Maria","gibt","dem","Kind","ein","Buch","Maria","dem Kind","ein Buch"],
+  {text:"Maria gibt dem Kind ein Buch.",voice:"aktiv",chips:["Maria","gibt","dem","Kind","ein","Buch","Maria","dem Kind","ein Buch"],
     wortart:{artikel:["dem","ein"],adjektiv:[],substantiv:["Maria","Kind","Buch"],verb:["gibt"]},
     satzglied:{subjekt:["Maria"],prädikat:["gibt"],dativ:["dem Kind"],akkusativ:["ein Buch"]}},
-  {text:"Der müde Lehrer erklärt den Schülern.",chips:["Der","müde","Lehrer","erklärt","den","Schülern","Der müde Lehrer","den Schülern"],
+  {text:"Der müde Lehrer erklärt den Schülern.",voice:"aktiv",chips:["Der","müde","Lehrer","erklärt","den","Schülern","Der müde Lehrer","den Schülern"],
     wortart:{artikel:["Der","den"],adjektiv:["müde"],substantiv:["Lehrer","Schülern"],verb:["erklärt"]},
     satzglied:{subjekt:["Der müde Lehrer"],prädikat:["erklärt"],dativ:["den Schülern"]}},
-  {text:"Ein junger Pilot fliegt das Flugzeug.",chips:["Ein","junger","Pilot","fliegt","das","Flugzeug","Ein junger Pilot","das Flugzeug"],
+  {text:"Ein junger Pilot fliegt das Flugzeug.",voice:"aktiv",chips:["Ein","junger","Pilot","fliegt","das","Flugzeug","Ein junger Pilot","das Flugzeug"],
     wortart:{artikel:["Ein","das"],adjektiv:["junger"],substantiv:["Pilot","Flugzeug"],verb:["fliegt"]},
     satzglied:{subjekt:["Ein junger Pilot"],prädikat:["fliegt"],akkusativ:["das Flugzeug"]}},
-  {text:"Die Ingenieurin prüft den neuen Plan.",chips:["Die","Ingenieurin","prüft","den","neuen","Plan","Die Ingenieurin","den neuen Plan"],
+  {text:"Die Ingenieurin prüft den neuen Plan.",voice:"aktiv",chips:["Die","Ingenieurin","prüft","den","neuen","Plan","Die Ingenieurin","den neuen Plan"],
     wortart:{artikel:["Die","den"],adjektiv:["neuen"],substantiv:["Ingenieurin","Plan"],verb:["prüft"]},
     satzglied:{subjekt:["Die Ingenieurin"],prädikat:["prüft"],akkusativ:["den neuen Plan"]}},
-  {text:"Das kleine Kind malt ein buntes Bild.",chips:["Das","kleine","Kind","malt","ein","buntes","Bild","Das kleine Kind","ein buntes Bild"],
+  {text:"Das kleine Kind malt ein buntes Bild.",voice:"aktiv",chips:["Das","kleine","Kind","malt","ein","buntes","Bild","Das kleine Kind","ein buntes Bild"],
     wortart:{artikel:["Das","ein"],adjektiv:["kleine","buntes"],substantiv:["Kind","Bild"],verb:["malt"]},
     satzglied:{subjekt:["Das kleine Kind"],prädikat:["malt"],akkusativ:["ein buntes Bild"]}},
-  {text:"Der starke Junge trägt der alten Frau die schwere Tasche.",chips:["Der","starke","Junge","trägt","der","alten","Frau","die","schwere","Tasche","Der starke Junge","der alten Frau","die schwere Tasche"],
+  {text:"Der starke Junge trägt der alten Frau die schwere Tasche.",voice:"aktiv",chips:["Der","starke","Junge","trägt","der","alten","Frau","die","schwere","Tasche","Der starke Junge","der alten Frau","die schwere Tasche"],
     wortart:{artikel:["Der","der","die"],adjektiv:["starke","alten","schwere"],substantiv:["Junge","Frau","Tasche"],verb:["trägt"]},
     satzglied:{subjekt:["Der starke Junge"],prädikat:["trägt"],dativ:["der alten Frau"],akkusativ:["die schwere Tasche"]}},
+  {text:"Das Tor wird geschlossen.",voice:"passiv",chips:["Das","Tor","wird","geschlossen","Das Tor","wird geschlossen"],
+    wortart:{artikel:["Das"],adjektiv:[],substantiv:["Tor"],verb:["wird","geschlossen"]},
+    satzglied:{subjekt:["Das Tor"],prädikat:["wird geschlossen"]}},
+  {text:"Das Licht wird eingeschaltet.",voice:"passiv",chips:["Das","Licht","wird","eingeschaltet","Das Licht","wird eingeschaltet"],
+    wortart:{artikel:["Das"],adjektiv:[],substantiv:["Licht"],verb:["wird","eingeschaltet"]},
+    satzglied:{subjekt:["Das Licht"],prädikat:["wird eingeschaltet"]}},
 ];
-let brillenSatzIdx=0, brillenCurrentMode='wortart', brillenPlaced={};
+let brillenSatzIdx=0, brillenCurrentMode='wortart', brillenPlaced={}, brillenVoiceDone=false;
 
+function brillenVoice(choice){
+  if(brillenVoiceDone) return;
+  brillenVoiceDone = true;
+  const d = BRILLEN_POOL[brillenSatzIdx];
+  const correct = d.voice || 'aktiv';
+  const btnA = document.getElementById('brill-voice-aktiv');
+  const btnP = document.getElementById('brill-voice-passiv');
+  const hint = document.getElementById('brill-voice-hint');
+  if(choice === correct){
+    document.getElementById('brill-voice-' + choice).classList.add('correct');
+    document.getElementById('brill-voice-' + (choice==='aktiv'?'passiv':'aktiv')).classList.add('locked');
+    hint.textContent = '+1 Bonuspunkt! ✅';
+    hint.style.color = 'var(--green)';
+    addScore(1);
+  } else {
+    document.getElementById('brill-voice-' + choice).classList.add('wrong');
+    document.getElementById('brill-voice-' + correct).classList.add('correct');
+    hint.textContent = 'Nein — das ist ' + (correct==='aktiv'?'⚡ Aktiv':'🔄 Passiv');
+    hint.style.color = 'var(--red)';
+  }
+}
+function brillenVoiceReset(){
+  brillenVoiceDone = false;
+  ['aktiv','passiv'].forEach(v=>{
+    const b = document.getElementById('brill-voice-' + v);
+    b.className = 'brillen-btn';
+  });
+  const h = document.getElementById('brill-voice-hint');
+  h.textContent = ''; h.style.color = '';
+}
 function brillenMode(mode){
   brillenCurrentMode=mode;
   document.getElementById('brill-btn-wortart').className=mode==='wortart'?'brillen-btn active':'brillen-btn';
@@ -2740,6 +3089,7 @@ function brillenInit(){
   document.getElementById('brill-sentence').textContent=d.text;
   const num=document.getElementById('brill-satz-num');
   if(num) num.textContent=`Satz ${brillenSatzIdx+1} / ${BRILLEN_POOL.length}`;
+  brillenVoiceReset();
   brillenMode(brillenCurrentMode);
 }
 function brillenRenderChips(){
@@ -3509,6 +3859,8 @@ setInterval(() => {
   <div class="wisher-input-row">
     <input class="wisher-input" id="wisher-input" type="text" placeholder="Stell mir eine Frage …"
       onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();window.wisherSend&&window.wisherSend();}">
+    <button class="wisher-mic-btn" id="wisher-mic-btn" title="Spracheingabe"
+      onclick="window.wisherMicToggle&&window.wisherMicToggle()">🎤</button>
     <button class="wisher-send-btn" onclick="window.wisherSend&&window.wisherSend()">➤</button>
   </div>
 </div>
@@ -4047,6 +4399,70 @@ window.kiSubmit = function () {
   }
 };
 
+// ── WISHER MIC — Spracheingabe via Web Speech API (kein extra Download) ────────
+let _wisherMicActive      = false;
+let _wisherMicRecognition = null;
+
+window.wisherMicToggle = function () {
+  if (_wisherMicActive) {
+    _wisherMicStop();
+  } else {
+    _wisherMicStart();
+  }
+};
+
+function _wisherMicStart() {
+  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRec) {
+    wisherBotMsg('Spracheingabe wird in diesem Browser nicht unterstützt — bitte Chrome nutzen. 🎤');
+    return;
+  }
+  const rec = new SpeechRec();
+  rec.lang            = 'de-DE';
+  rec.interimResults  = true;
+  rec.maxAlternatives = 1;
+  rec.continuous      = false;
+
+  _wisherMicActive      = true;
+  _wisherMicRecognition = rec;
+
+  const btn = $('wisher-mic-btn');
+  const inp = $('wisher-input');
+  if (btn) { btn.classList.add('recording'); btn.innerHTML = '⏹'; btn.title = 'Stoppen'; }
+  if (inp) { inp.placeholder = '🔴 Sprich jetzt …'; inp.value = ''; }
+
+  rec.onresult = e => {
+    let text = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      text += e.results[i][0].transcript;
+    }
+    if (inp) inp.value = text;
+  };
+
+  rec.onend = () => {
+    _wisherMicActive = false;
+    if (btn) { btn.classList.remove('recording'); btn.innerHTML = '🎤'; btn.title = 'Spracheingabe'; }
+    if (inp) inp.placeholder = 'Stell mir eine Frage …';
+    // Auto-send if transcription is non-empty
+    const text = $('wisher-input')?.value.trim();
+    if (text) setTimeout(() => window.wisherSend?.(), 120);
+  };
+
+  rec.onerror = e => {
+    _wisherMicActive = false;
+    if (btn) { btn.classList.remove('recording'); btn.innerHTML = '🎤'; btn.title = 'Spracheingabe'; }
+    if (inp) inp.placeholder = 'Stell mir eine Frage …';
+    if (e.error !== 'aborted' && e.error !== 'no-speech')
+      wisherBotMsg(`Spracherkennungs-Fehler: ${e.error}`);
+  };
+
+  rec.start();
+}
+
+function _wisherMicStop() {
+  _wisherMicRecognition?.stop();
+}
+
 // ── WISHER chatbot panel ──────────────────────────────────────────────────────
 window.wisherToggle = function () {
   wisherOpen = !wisherOpen;
@@ -4119,6 +4535,411 @@ window.wisherSend = async function () {
     botDiv.textContent = 'Fehler: ' + e.message;
   }
 };
+
+// ── KI-MODUS — Mode toggle ─────────────────────────────────────────────────────
+let kimCurrentMode = 'ueben'; // 'ueben' | 'kimode'
+
+window.kimSetMode = function (mode) {
+  kimCurrentMode = mode;
+  const panelKim  = $('ki-kimode-panel');
+  const panelEx   = $('ki-exercise-panel');
+  const btnUeben  = $('kim-btn-ueben');
+  const btnKimode = $('kim-btn-kimode');
+  if (mode === 'kimode') {
+    if (panelKim) panelKim.style.display = '';
+    if (panelEx)  panelEx.style.display  = 'none';
+    if (btnUeben)  btnUeben.classList.remove('active');
+    if (btnKimode) btnKimode.classList.add('active');
+    // Reset to record step
+    kimResetToRecord();
+    // Optionally greet the child with LLM if model is loaded
+    if (kiPipe && kiName) {
+      const prompt = `Sage kurz (1 Satz) auf Deutsch zu ${kiName}: "Erzähl mir einen selbst ausgedachten Satz! Drücke den Mikrofon-Knopf." Sei lustig und motivierend.`;
+      kiLlmSpeak(prompt, $('kim-ai-msg'), null);
+    }
+  } else {
+    if (panelKim) panelKim.style.display = 'none';
+    if (panelEx)  panelEx.style.display  = '';
+    if (btnUeben)  btnUeben.classList.add('active');
+    if (btnKimode) btnKimode.classList.remove('active');
+  }
+};
+
+// ── KI-MODUS — Whisper state ────────────────────────────────────────────────────
+let _kimWhisperPipe    = null;
+let _kimWhisperLoading = false;
+let _kimRecording      = false;
+let _kimMediaRecorder  = null;
+let _kimAudioChunks    = [];
+let _kimMediaStream    = null;
+let _kimTimerInterval  = null;
+let _kimRecSeconds     = 0;
+let _kimCurrentText    = '';
+let _kimNebenData      = null;  // {hauptsatz, nebensatz} when detected
+
+function kimSetWhisperStatus(msg) {
+  const el = $('kim-whisper-status');
+  if (el) el.textContent = msg;
+}
+
+function kimSetHint(msg) {
+  const el = $('kim-rec-hint');
+  if (el) el.textContent = msg;
+}
+
+async function kimLoadWhisper() {
+  if (_kimWhisperPipe) return _kimWhisperPipe;
+  if (_kimWhisperLoading) return null;
+  _kimWhisperLoading = true;
+  kimSetWhisperStatus('Whisper wird geladen … (whisper-base, ~75 MB, bitte warten)');
+  const btn = $('kim-record-btn');
+  if (btn) { btn.classList.add('processing'); btn.textContent = '⏳'; btn.disabled = true; }
+  try {
+    const hasWebGPU = navigator.gpu != null;
+    const device = hasWebGPU ? 'webgpu' : 'wasm';
+    const dtypes = hasWebGPU
+      ? { encoder_model: 'fp32', decoder_model_merged: 'q4' }
+      : { encoder_model: 'q8',  decoder_model_merged: 'q4' };
+    _kimWhisperPipe = await pipeline(
+      'automatic-speech-recognition',
+      'onnx-community/whisper-base',
+      { device, dtype: dtypes, progress_callback: p => {
+        if (p.status === 'progress' && p.total) {
+          const pct = Math.round(p.loaded / p.total * 100);
+          kimSetWhisperStatus(`Whisper lädt … ${p.file || ''} ${pct}%`);
+        }
+      }}
+    );
+    kimSetWhisperStatus(`Whisper bereit (${device.toUpperCase()}) — jetzt sprechen!`);
+  } catch (e) {
+    kimSetWhisperStatus(`Whisper-Fehler: ${e.message}`);
+    _kimWhisperLoading = false;
+    if (btn) { btn.classList.remove('processing'); btn.textContent = '🎤'; btn.disabled = false; }
+    return null;
+  }
+  _kimWhisperLoading = false;
+  if (btn) { btn.classList.remove('processing'); btn.textContent = '🎤'; btn.disabled = false; }
+  return _kimWhisperPipe;
+}
+
+// ── KI-MODUS — Recording ────────────────────────────────────────────────────────
+window.kimRecord = async function () {
+  if (_kimRecording) {
+    _kimStopRecording();
+    return;
+  }
+  // Lazy-load Whisper on first press
+  if (!_kimWhisperPipe) {
+    const pipe = await kimLoadWhisper();
+    if (!pipe) return;
+  }
+  _kimStartRecording();
+};
+
+async function _kimStartRecording() {
+  try {
+    _kimMediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch (e) {
+    kimSetHint('Mikrofon-Zugriff verweigert — bitte in den Browser-Einstellungen erlauben.');
+    return;
+  }
+  _kimAudioChunks = [];
+  _kimMediaRecorder = new MediaRecorder(_kimMediaStream);
+  _kimMediaRecorder.ondataavailable = e => { if (e.data.size > 0) _kimAudioChunks.push(e.data); };
+  _kimMediaRecorder.onstop = _kimProcessAudio;
+  _kimMediaRecorder.start();
+  _kimRecording = true;
+  _kimRecSeconds = 0;
+
+  const btn = $('kim-record-btn');
+  if (btn) { btn.classList.add('recording'); btn.textContent = '⏹'; }
+  const timer = $('kim-rec-timer');
+  if (timer) timer.textContent = '● 0s';
+  kimSetHint('Sprich jetzt deinen Satz — drücke nochmal zum Stoppen!');
+
+  _kimTimerInterval = setInterval(() => {
+    _kimRecSeconds++;
+    if (timer) timer.textContent = `● ${_kimRecSeconds}s`;
+    if (_kimRecSeconds >= 30) _kimStopRecording();
+  }, 1000);
+}
+
+function _kimStopRecording() {
+  if (!_kimRecording) return;
+  _kimRecording = false;
+  clearInterval(_kimTimerInterval);
+  const btn = $('kim-record-btn');
+  if (btn) { btn.classList.remove('recording'); btn.classList.add('processing'); btn.textContent = '⏳'; btn.disabled = true; }
+  const timer = $('kim-rec-timer');
+  if (timer) timer.textContent = '';
+  kimSetHint('Spracherkennung läuft …');
+  _kimMediaRecorder?.stop();
+  _kimMediaStream?.getTracks().forEach(t => t.stop());
+}
+
+async function _kimProcessAudio() {
+  const blob = new Blob(_kimAudioChunks, { type: 'audio/webm' });
+  try {
+    // Decode + resample to 16 kHz Float32
+    const arrayBuf = await blob.arrayBuffer();
+    const audioCtx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(1, 16000 * 30, 16000);
+    const decoded  = await new AudioContext().decodeAudioData(arrayBuf);
+    const src      = audioCtx.createBufferSource();
+    const resampled = audioCtx.createBuffer(1, Math.floor(decoded.duration * 16000), 16000);
+    const tmpCtx    = new OfflineAudioContext(1, Math.floor(decoded.duration * 16000), 16000);
+    const tmpSrc    = tmpCtx.createBufferSource();
+    tmpSrc.buffer   = decoded;
+    tmpSrc.connect(tmpCtx.destination);
+    tmpSrc.start(0);
+    const renderedBuf = await tmpCtx.startRendering();
+    const f32 = renderedBuf.getChannelData(0);
+
+    kimSetWhisperStatus('Transkribiere …');
+    const result = await _kimWhisperPipe(f32, { language: 'german', task: 'transcribe' });
+    const text = (result.text || '').trim();
+    _kimCurrentText = text;
+    $('kim-record-btn').classList.remove('processing');
+    $('kim-record-btn').disabled = false;
+    $('kim-record-btn').textContent = '🎤';
+    kimSetWhisperStatus('Transkription fertig!');
+    if (text) {
+      kimShowResult(text);
+    } else {
+      kimSetHint('Nichts erkannt — bitte nochmal versuchen!');
+    }
+  } catch (e) {
+    const btn = $('kim-record-btn');
+    if (btn) { btn.classList.remove('processing'); btn.textContent = '🎤'; btn.disabled = false; }
+    kimSetHint(`Fehler: ${e.message}`);
+    kimSetWhisperStatus('');
+  }
+}
+
+// ── KI-MODUS — Nebensatz detection ─────────────────────────────────────────────
+const NEBEN_KEYWORDS = ['weil','dass','obwohl','ob','damit','nachdem','bevor','seitdem',
+  'solange','waehrend','sobald','bis','wenn','als','falls','sofern','indem',
+  'wodurch','wonach','wobei','welcher','welche','welches','der','die','das'];
+
+function kimDetectNebensatz(text) {
+  const lower = text.toLowerCase();
+  const hasComma = lower.includes(',');
+  if (!hasComma) return false;
+  // After comma, check if any subordinating conjunction or relative pronoun starts the clause
+  const afterComma = lower.split(',').slice(1).join(',').trim();
+  return NEBEN_KEYWORDS.some(k => afterComma.startsWith(k + ' ') || afterComma.startsWith(k + ','));
+}
+
+function kimSplitAtComma(text) {
+  const parts = text.split(',');
+  if (parts.length < 2) return { hauptsatz: text, nebensatz: '' };
+  return { hauptsatz: parts[0].trim(), nebensatz: parts.slice(1).join(',').trim() };
+}
+
+// ── KI-MODUS — Show result ──────────────────────────────────────────────────────
+function kimShowResult(text) {
+  // Switch to result view
+  $('kim-step-record').style.display  = 'none';
+  $('kim-step-result').style.display  = '';
+  $('kim-satz-display').textContent   = text;
+
+  const isNeben = kimDetectNebensatz(text);
+  if (isNeben) {
+    _kimNebenData = kimSplitAtComma(text);
+    const nebBubble = $('kim-nebensatz-bubble');
+    if (nebBubble) nebBubble.style.display = '';
+    // Show LLM callout about long sentence
+    if (kiPipe) {
+      const prompt = `Sage kurz auf Deutsch zu ${kiName || 'dem Kind'} (1-2 Sätze), dass der Satz einen Nebensatz hat und frage ob man ihn aufteilen soll. Satz: "${text}". Sei freundlich und neugierig.`;
+      kiLlmSpeak(prompt, $('kim-neb-text'), null);
+    }
+    // Do NOT show analysis yet — wait for user choice
+    $('kim-analysis-label').style.display = 'none';
+    $('kim-analysis-area').innerHTML = '';
+    $('kim-llm-bubble').style.display = 'none';
+  } else {
+    $('kim-nebensatz-bubble').style.display = 'none';
+    kimAnalyzeAndDisplay(text);
+  }
+}
+
+window.kimSplitSentence = function () {
+  if (!_kimNebenData) return;
+  $('kim-nebensatz-bubble').style.display = 'none';
+  // Show two separate analysis sections
+  const combined = `Hauptsatz: "${_kimNebenData.hauptsatz}" / Nebensatz: "${_kimNebenData.nebensatz}"`;
+  kimAnalyzeAndDisplay(_kimNebenData.hauptsatz, _kimNebenData.nebensatz);
+};
+
+window.kimAnalyzeWhole = function () {
+  $('kim-nebensatz-bubble').style.display = 'none';
+  kimAnalyzeAndDisplay(_kimCurrentText);
+};
+
+// ── KI-MODUS — LLM analysis ────────────────────────────────────────────────────
+async function kimAnalyzeAndDisplay(hauptText, nebenText) {
+  $('kim-analysis-label').style.display = '';
+  const area = $('kim-analysis-area');
+  area.innerHTML = '<span style="color:var(--text2);font-size:0.88rem">Analysiere …</span>';
+
+  if (!kiPipe) {
+    // Rule-based fallback: show all words as unassigned
+    const words = hauptText.split(/\s+/);
+    area.innerHTML = '';
+    words.forEach(w => {
+      if (!w) return;
+      const c = document.createElement('span');
+      c.className = 'kim-word-chip unassigned';
+      c.textContent = w;
+      area.appendChild(c);
+    });
+    const bubble = $('kim-llm-bubble');
+    const textEl = $('kim-llm-text');
+    if (bubble && textEl) {
+      bubble.style.display = '';
+      textEl.textContent = 'Lade das KI-Modell (Knopf "KI laden" oben), damit ich die Satzglieder farbig markieren kann!';
+    }
+    return;
+  }
+
+  const analysisPrompt = `Du bist ein Deutschlehrer. Analysiere den folgenden deutschen Satz und weise jedem Wort ein Satzglied zu.
+Antworte NUR als JSON-Objekt ohne Erklärung, nach diesem Schema:
+{"tokens":[{"text":"...","role":"verb|subjekt|akk|dat|gen|adv|none"}]}
+
+Satzglieder-Schluessel (verwende nur diese):
+- "subjekt" = Subjekt (Nominativ, wer/was)
+- "verb" = Verb / Praedikat
+- "akk" = Akkusativ-Objekt (wen/was)
+- "dat" = Dativ-Objekt (wem)
+- "gen" = Genitiv-Objekt (wessen)
+- "adv" = Adverbiale (wann, wo, wie, warum)
+- "none" = kein Satzglied / Artikel / Konjunktion
+
+Satz: "${hauptText}"
+
+JSON:`;
+
+  try {
+    let jsonStr = '';
+    const streamer = new TextStreamer(kiPipe.tokenizer, {
+      skip_prompt: true,
+      skip_special_tokens: true,
+      callback_function: token => { jsonStr += token; },
+    });
+    await kiPipe(
+      [{ role: 'user', content: analysisPrompt }],
+      { max_new_tokens: 200, temperature: 0.1, do_sample: false, streamer }
+    );
+
+    // Extract JSON from response (LLM may wrap it in markdown code fences)
+    const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('Kein JSON in der Antwort');
+    const parsed = JSON.parse(jsonMatch[0]);
+    const tokens = parsed.tokens || [];
+
+    area.innerHTML = '';
+    tokens.forEach(tok => {
+      const role = ROLES.find(r => r.key === tok.role) || ROLES[ROLES.length - 1];
+      const chip = document.createElement('span');
+      chip.className = 'kim-word-chip';
+      chip.style.background = tok.role === 'none' ? 'var(--bg3)' : role.color;
+      chip.style.color = tok.role === 'none' ? 'var(--text2)' : '#fff';
+      chip.style.border = tok.role === 'none' ? '2px dashed var(--border)' : 'none';
+      chip.innerHTML = `${tok.text}<span class="kim-chip-role">${role.short}</span>`;
+      area.appendChild(chip);
+    });
+
+    // Add legend row
+    if (tokens.some(t => t.role !== 'none')) {
+      const legend = document.createElement('div');
+      legend.style.cssText = 'width:100%;display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;';
+      const usedRoles = [...new Set(tokens.filter(t => t.role !== 'none').map(t => t.role))];
+      usedRoles.forEach(key => {
+        const r = ROLES.find(x => x.key === key);
+        if (!r) return;
+        const pill = document.createElement('span');
+        pill.style.cssText = `background:${r.color};color:#fff;border-radius:20px;padding:2px 10px;font-size:0.72rem;font-weight:700;`;
+        pill.textContent = r.label;
+        legend.appendChild(pill);
+      });
+      area.appendChild(legend);
+    }
+
+    // Nebensatz display
+    if (nebenText) {
+      const sep = document.createElement('div');
+      sep.style.cssText = 'width:100%;font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#7c3aed;margin-top:12px;margin-bottom:4px;';
+      sep.textContent = 'Nebensatz:';
+      area.appendChild(sep);
+      nebenText.split(/\s+/).forEach(w => {
+        if (!w) return;
+        const chip = document.createElement('span');
+        chip.className = 'kim-word-chip unassigned';
+        chip.style.cssText = 'background:var(--bg3);color:var(--text2);border:2px dashed var(--border);font-size:0.88rem;';
+        chip.textContent = w;
+        area.appendChild(chip);
+      });
+      const note = document.createElement('div');
+      note.style.cssText = 'width:100%;font-size:0.78rem;color:var(--text2);margin-top:4px;';
+      note.textContent = '(Den Nebensatz kannst du mit dem KI-Tutor Chat weiter analysieren)';
+      area.appendChild(note);
+    }
+
+    // LLM explanation
+    const bubble = $('kim-llm-bubble');
+    const textEl = $('kim-llm-text');
+    if (bubble && textEl && kiPipe) {
+      bubble.style.display = '';
+      const explain =
+        `Du bist Deutschlehrer. Erklaere ${kiName || 'dem Kind'} in 2-3 kurzen Saetzen auf Deutsch ` +
+        `die interessantesten Satzglieder in diesem Satz. ` +
+        `Satz: "${hauptText}". Sei klar, einfach und ermutigend.`;
+      kiLlmSpeak(explain, textEl, null);
+    }
+  } catch (err) {
+    // Fallback: show all words unassigned
+    area.innerHTML = '';
+    hauptText.split(/\s+/).forEach(w => {
+      if (!w) return;
+      const chip = document.createElement('span');
+      chip.className = 'kim-word-chip unassigned';
+      chip.textContent = w;
+      area.appendChild(chip);
+    });
+    const bubble = $('kim-llm-bubble');
+    const textEl = $('kim-llm-text');
+    if (bubble && textEl) {
+      bubble.style.display = '';
+      textEl.textContent = `Analyse konnte nicht geparst werden (${err.message}). Ich zeige die Woerter ohne Farbe.`;
+    }
+  }
+}
+
+// ── KI-MODUS — Reset ────────────────────────────────────────────────────────────
+function kimResetToRecord() {
+  _kimCurrentText  = '';
+  _kimNebenData    = null;
+  const stepRec = $('kim-step-record');
+  const stepRes = $('kim-step-result');
+  if (stepRec) stepRec.style.display = '';
+  if (stepRes) stepRes.style.display = 'none';
+
+  const btn = $('kim-record-btn');
+  if (btn) {
+    btn.classList.remove('recording', 'processing');
+    btn.textContent = '🎤';
+    btn.disabled    = false;
+  }
+  const timer = $('kim-rec-timer');
+  if (timer) timer.textContent = '';
+  kimSetHint('Druecke den Knopf und sprich deinen Satz!');
+  const nebBubble = $('kim-nebensatz-bubble');
+  if (nebBubble) nebBubble.style.display = 'none';
+  const anlbl = $('kim-analysis-label'); if (anlbl) anlbl.style.display = 'none';
+  const anarea = $('kim-analysis-area'); if (anarea) anarea.innerHTML = '';
+  const kimBubble = $('kim-llm-bubble'); if (kimBubble) kimBubble.style.display = 'none';
+  if (_kimWhisperPipe) kimSetWhisperStatus('Whisper bereit — druecke den Knopf und sprich!');
+}
+window.kimResetToRecord = kimResetToRecord;
 
 // ── Auto-init ─────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {

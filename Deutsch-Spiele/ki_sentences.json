@@ -1,0 +1,107 @@
+{
+  "title": "Satzglieder — Übungssätze",
+  "version": "1.0",
+  "description": "Übungssätze für den KI-Tutor. Jeder Satz hat Chips (klickbare Wortgruppen) und eine Musterlösung.",
+  "sentences": [
+    {
+      "text": "Der Hund läuft schnell durch den Park.",
+      "chips": ["Der Hund", "läuft", "schnell", "durch den Park"],
+      "sol": { "verb": ["läuft"], "subjekt": ["Der Hund"], "akk": [], "dat": [], "gen": [], "adv": ["schnell", "durch den Park"] }
+    },
+    {
+      "text": "Maria schenkt ihrem Bruder ein Buch.",
+      "chips": ["Maria", "schenkt", "ihrem Bruder", "ein Buch"],
+      "sol": { "verb": ["schenkt"], "subjekt": ["Maria"], "akk": ["ein Buch"], "dat": ["ihrem Bruder"], "gen": [], "adv": [] }
+    },
+    {
+      "text": "Der Lehrer erklärt heute die Aufgabe.",
+      "chips": ["Der Lehrer", "erklärt", "heute", "die Aufgabe"],
+      "sol": { "verb": ["erklärt"], "subjekt": ["Der Lehrer"], "akk": ["die Aufgabe"], "dat": [], "gen": [], "adv": ["heute"] }
+    },
+    {
+      "text": "Tom gibt dem Kind einen Mantel.",
+      "chips": ["Tom", "gibt", "dem Kind", "einen Mantel"],
+      "sol": { "verb": ["gibt"], "subjekt": ["Tom"], "akk": ["einen Mantel"], "dat": ["dem Kind"], "gen": [], "adv": [] }
+    },
+    {
+      "text": "Die Schülerin liest nach dem Essen ein Buch.",
+      "chips": ["Die Schülerin", "liest", "nach dem Essen", "ein Buch"],
+      "sol": { "verb": ["liest"], "subjekt": ["Die Schülerin"], "akk": ["ein Buch"], "dat": [], "gen": [], "adv": ["nach dem Essen"] }
+    },
+    {
+      "text": "Der Pilot landet morgen in München.",
+      "chips": ["Der Pilot", "landet", "morgen", "in München"],
+      "sol": { "verb": ["landet"], "subjekt": ["Der Pilot"], "akk": [], "dat": [], "gen": [], "adv": ["morgen", "in München"] }
+    },
+    {
+      "text": "Die Katze schläft jeden Morgen im Garten.",
+      "chips": ["Die Katze", "schläft", "jeden Morgen", "im Garten"],
+      "sol": { "verb": ["schläft"], "subjekt": ["Die Katze"], "akk": [], "dat": [], "gen": [], "adv": ["jeden Morgen", "im Garten"] }
+    },
+    {
+      "text": "Die Ingenieurin löst das Problem schnell.",
+      "chips": ["Die Ingenieurin", "löst", "das Problem", "schnell"],
+      "sol": { "verb": ["löst"], "subjekt": ["Die Ingenieurin"], "akk": ["das Problem"], "dat": [], "gen": [], "adv": ["schnell"] }
+    },
+    {
+      "text": "Der Junge hilft der Oma heute im Haus.",
+      "chips": ["Der Junge", "hilft", "der Oma", "heute", "im Haus"],
+      "sol": { "verb": ["hilft"], "subjekt": ["Der Junge"], "akk": [], "dat": ["der Oma"], "gen": [], "adv": ["heute", "im Haus"] }
+    },
+    {
+      "text": "Tom zeigt der Klasse das Werkzeug im Labor.",
+      "chips": ["Tom", "zeigt", "der Klasse", "das Werkzeug", "im Labor"],
+      "sol": { "verb": ["zeigt"], "subjekt": ["Tom"], "akk": ["das Werkzeug"], "dat": ["der Klasse"], "gen": [], "adv": ["im Labor"] }
+    },
+    {
+      "text": "Lucy schreibt wegen des Regens die Probe.",
+      "chips": ["Lucy", "schreibt", "wegen des Regens", "die Probe"],
+      "sol": { "verb": ["schreibt"], "subjekt": ["Lucy"], "akk": ["die Probe"], "dat": [], "gen": [], "adv": ["wegen des Regens"] }
+    },
+    {
+      "text": "Der Nachbar grüßt uns jeden Morgen freundlich.",
+      "chips": ["Der Nachbar", "grüßt", "uns", "jeden Morgen", "freundlich"],
+      "sol": { "verb": ["grüßt"], "subjekt": ["Der Nachbar"], "akk": ["uns"], "dat": [], "gen": [], "adv": ["jeden Morgen", "freundlich"] }
+    },
+    {
+      "text": "Die Mutter backt am Samstag einen Kuchen.",
+      "chips": ["Die Mutter", "backt", "am Samstag", "einen Kuchen"],
+      "sol": { "verb": ["backt"], "subjekt": ["Die Mutter"], "akk": ["einen Kuchen"], "dat": [], "gen": [], "adv": ["am Samstag"] }
+    },
+    {
+      "text": "Tom erklärt dem Vater den Plan.",
+      "chips": ["Tom", "erklärt", "dem Vater", "den Plan"],
+      "sol": { "verb": ["erklärt"], "subjekt": ["Tom"], "akk": ["den Plan"], "dat": ["dem Vater"], "gen": [], "adv": [] }
+    },
+    {
+      "text": "Der Schüler bedarf heute der Hilfe.",
+      "chips": ["Der Schüler", "bedarf", "heute", "der Hilfe"],
+      "sol": { "verb": ["bedarf"], "subjekt": ["Der Schüler"], "akk": [], "dat": [], "gen": ["der Hilfe"], "adv": ["heute"] }
+    },
+    {
+      "text": "Die Ärztin erklärt der Mutter die Diagnose.",
+      "chips": ["Die Ärztin", "erklärt", "der Mutter", "die Diagnose"],
+      "sol": { "verb": ["erklärt"], "subjekt": ["Die Ärztin"], "akk": ["die Diagnose"], "dat": ["der Mutter"], "gen": [], "adv": [] }
+    },
+    {
+      "text": "Wir fahren wegen des Staus langsam.",
+      "chips": ["Wir", "fahren", "wegen des Staus", "langsam"],
+      "sol": { "verb": ["fahren"], "subjekt": ["Wir"], "akk": [], "dat": [], "gen": [], "adv": ["wegen des Staus", "langsam"] }
+    },
+    {
+      "text": "Die Lehrerin liest der Klasse eine Geschichte vor.",
+      "chips": ["Die Lehrerin", "liest vor", "der Klasse", "eine Geschichte"],
+      "sol": { "verb": ["liest vor"], "subjekt": ["Die Lehrerin"], "akk": ["eine Geschichte"], "dat": ["der Klasse"], "gen": [], "adv": [] }
+    },
+    {
+      "text": "Er kauft seiner Schwester ein Geburtstagsgeschenk.",
+      "chips": ["Er", "kauft", "seiner Schwester", "ein Geburtstagsgeschenk"],
+      "sol": { "verb": ["kauft"], "subjekt": ["Er"], "akk": ["ein Geburtstagsgeschenk"], "dat": ["seiner Schwester"], "gen": [], "adv": [] }
+    },
+    {
+      "text": "Das Kind schläft trotz des Lärms tief.",
+      "chips": ["Das Kind", "schläft", "trotz des Lärms", "tief"],
+      "sol": { "verb": ["schläft"], "subjekt": ["Das Kind"], "akk": [], "dat": [], "gen": [], "adv": ["trotz des Lärms", "tief"] }
+    }
+  ]
+}
