@@ -1,0 +1,627 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tools – Übersicht</title>
+  <meta name="description" content="Interaktive Tools und Spiele: Deutsch-Lernspiele, Zahlenrätsel, SpotIt-Kartengenerator und mehr.">
+  <meta name="theme-color" content="#060b14">
+  <style>
+    /* ── Reset & Design-Tokens ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:       #060b14;
+      --ink:      #eef2ff;
+      --muted:    rgba(238,242,255,.62);
+      --line:     rgba(255,255,255,.1);
+      --glass:    rgba(255,255,255,.045);
+      --orange:   #fb4f03;
+      --blue:     #3b82f6;
+      --purple:   #8b5cf6;
+      --green:    #22c55e;
+      --gold:     #d7a94b;
+      --radius:   18px;
+      --shadow:   0 24px 80px rgba(0,0,0,.45);
+    }
+
+    html {
+      scroll-behavior: smooth;
+      background: var(--bg);
+    }
+
+    /* Accessibility: no motion */
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after {
+        animation-duration: .01ms !important;
+        transition-duration: .01ms !important;
+      }
+      .reveal { opacity: 1 !important; transform: none !important; }
+    }
+
+    body {
+      color: var(--ink);
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      overflow-x: hidden;
+      background:
+        radial-gradient(circle at 8% 12%, rgba(59,130,246,.15), transparent 30rem),
+        radial-gradient(circle at 88% 78%, rgba(139,92,246,.13), transparent 28rem),
+        linear-gradient(160deg, #060b14 0%, #09121e 55%, #080e18 100%);
+      min-height: 100dvh;
+    }
+
+    /* ── Skip-link (Accessibility) ── */
+    .skip-link {
+      position: absolute; left: 50%; top: 0;
+      transform: translateX(-50%) translateY(-100%);
+      background: var(--blue); color: #fff;
+      padding: 10px 22px; border-radius: 0 0 12px 12px;
+      font-weight: 700; text-decoration: none; z-index: 999;
+      transition: transform .2s;
+      white-space: nowrap;
+    }
+    .skip-link:focus { transform: translateX(-50%) translateY(0); }
+
+    /* ── Scroll-progress bar ── */
+    .progress-bar {
+      position: fixed; inset: 0 0 auto 0; height: 3px; z-index: 200;
+      background: linear-gradient(90deg, var(--blue), var(--purple));
+      transform-origin: left; transform: scaleX(0);
+      transition: transform .08s linear;
+      pointer-events: none;
+    }
+
+    /* ── Navigation ── */
+    .nav {
+      position: fixed; z-index: 99; top: 14px; left: 50%;
+      transform: translateX(-50%);
+      width: min(1100px, calc(100% - 24px));
+      display: flex; align-items: center;
+      justify-content: space-between; gap: 10px;
+      padding: 9px 14px 9px 18px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(6,11,20,.76);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      box-shadow: var(--shadow);
+    }
+    .nav-brand {
+      display: flex; align-items: center; gap: 9px;
+      font-weight: 900; font-size: .95rem;
+      text-decoration: none; color: var(--ink);
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .nav-brand-accent { color: var(--blue); }
+    .nav-links { display: flex; gap: 4px; flex-wrap: nowrap; }
+    .nav-links a {
+      border: 1px solid var(--line); border-radius: 999px;
+      padding: 6px 13px; font-size: 13px; font-weight: 500;
+      text-decoration: none; color: var(--muted);
+      background: var(--glass);
+      transition: color .2s, border-color .2s, background .2s;
+      white-space: nowrap;
+    }
+    .nav-links a:hover { color: var(--ink); border-color: rgba(255,255,255,.28); background: rgba(255,255,255,.09); }
+    .nav-links a:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; border-radius: 999px; }
+
+    /* ── Hero ── */
+    .hero {
+      min-height: 100dvh;
+      display: grid; place-items: center;
+      text-align: center;
+      padding: 120px 24px 80px;
+      position: relative; isolation: isolate;
+      overflow: hidden;
+    }
+    .hero-bg {
+      position: absolute; inset: 0; z-index: -1;
+      background:
+        radial-gradient(ellipse 90% 55% at 50% 0%, rgba(59,130,246,.2), transparent),
+        radial-gradient(circle at 18% 82%, rgba(251,79,3,.17), transparent 32rem);
+    }
+    .hero-orb {
+      position: absolute; z-index: -1; border-radius: 50%;
+      filter: blur(48px); pointer-events: none;
+    }
+    .hero-orb-1 {
+      width: 440px; height: 440px;
+      top: 8%; left: 50%; transform: translateX(-50%);
+      background: radial-gradient(circle, rgba(59,130,246,.14), transparent 68%);
+    }
+    .hero-orb-2 {
+      width: 320px; height: 320px;
+      bottom: 12%; right: 5%;
+      background: radial-gradient(circle, rgba(139,92,246,.12), transparent 68%);
+    }
+
+    .eyebrow {
+      display: inline-block;
+      font-size: 11px; font-weight: 800; letter-spacing: .2em;
+      text-transform: uppercase; color: var(--blue);
+      border: 1px solid rgba(59,130,246,.35);
+      border-radius: 999px; padding: 5px 15px;
+      margin-bottom: 1.6rem;
+    }
+    .hero h1 {
+      font-size: clamp(48px, 10vw, 120px);
+      font-weight: 900; letter-spacing: -.04em; line-height: .92;
+      margin-bottom: .55em;
+    }
+    .hero h1 .grad {
+      background: linear-gradient(135deg, var(--blue) 20%, var(--purple) 80%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero-lead {
+      font-size: clamp(16px, 2.2vw, 21px); line-height: 1.65;
+      color: var(--muted); max-width: 620px; margin: 0 auto 2.5rem;
+    }
+    .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      border: none; border-radius: 999px;
+      padding: 13px 24px; font-size: 15px; font-weight: 700;
+      cursor: pointer; text-decoration: none;
+      transition: transform .22s, box-shadow .22s, filter .22s;
+      line-height: 1;
+    }
+    .btn:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
+    .btn:active { transform: translateY(1px) !important; }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--blue), var(--purple));
+      color: #fff;
+      box-shadow: 0 12px 36px rgba(59,130,246,.28);
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 18px 44px rgba(59,130,246,.4); }
+    .btn-secondary {
+      background: var(--glass); color: var(--ink);
+      border: 1px solid var(--line);
+    }
+    .btn-secondary:hover { background: rgba(255,255,255,.1); transform: translateY(-2px); }
+
+    /* Hero stats */
+    .hero-stats {
+      display: flex; gap: 40px; justify-content: center; margin-top: 4.5rem;
+      flex-wrap: wrap;
+    }
+    .stat { text-align: center; }
+    .stat-num {
+      font-size: clamp(34px, 5vw, 54px); font-weight: 900;
+      line-height: 1; color: var(--ink);
+      background: linear-gradient(135deg, #fff, rgba(255,255,255,.7));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .stat-label { font-size: 13px; color: var(--muted); margin-top: 5px; }
+
+    /* ── Main sections ── */
+    .section {
+      width: min(1100px, calc(100% - 40px));
+      margin: 0 auto; padding: 80px 0;
+    }
+    .section-header { margin-bottom: 2.5rem; }
+    .section-eyebrow {
+      font-size: 11px; font-weight: 800; letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--accent, var(--blue));
+      margin-bottom: .45rem;
+    }
+    .section-title {
+      font-size: clamp(28px, 4.5vw, 50px);
+      font-weight: 900; letter-spacing: -.035em; line-height: 1.07;
+    }
+    .section-desc {
+      font-size: 16px; color: var(--muted); margin-top: .65rem;
+      max-width: 580px; line-height: 1.65;
+    }
+
+    /* ── Tool cards ── */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+      gap: 16px;
+    }
+    .tool-card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 24px;
+      background: var(--glass);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      position: relative; overflow: hidden;
+      transition: transform .3s, box-shadow .3s, border-color .3s;
+      text-decoration: none; color: inherit;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .tool-card::before {
+      content: ''; position: absolute; inset: 0; z-index: 0;
+      background: radial-gradient(
+        circle at 0% 0%,
+        var(--card-glow, rgba(59,130,246,.1)),
+        transparent 60%
+      );
+      opacity: 0; transition: opacity .3s;
+      pointer-events: none;
+    }
+    .tool-card > * { position: relative; z-index: 1; }
+    .tool-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 28px 64px rgba(0,0,0,.42);
+      border-color: rgba(255,255,255,.2);
+    }
+    .tool-card:hover::before { opacity: 1; }
+    .tool-card:focus-visible {
+      outline: 2px solid var(--blue); outline-offset: 2px;
+      border-radius: var(--radius);
+    }
+
+    .card-icon {
+      width: 50px; height: 50px; border-radius: 14px;
+      display: grid; place-items: center; font-size: 24px;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.12);
+      flex-shrink: 0; line-height: 1;
+    }
+    .card-title {
+      font-size: 18px; font-weight: 800; letter-spacing: -.022em;
+      line-height: 1.2;
+    }
+    .card-desc {
+      font-size: 14px; color: var(--muted); line-height: 1.6; flex: 1;
+    }
+    .card-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 2px; }
+    .card-tag {
+      display: inline-block; font-size: 11px; font-weight: 700;
+      letter-spacing: .07em; text-transform: uppercase;
+      padding: 3px 9px; border-radius: 999px;
+      background: rgba(255,255,255,.06); color: var(--muted);
+      border: 1px solid var(--line);
+    }
+    .card-arrow {
+      margin-top: 6px; font-size: 13px; font-weight: 700;
+      color: var(--accent, var(--blue));
+      display: flex; align-items: center; gap: 5px;
+      transition: gap .2s;
+    }
+    .tool-card:hover .card-arrow { gap: 9px; }
+
+    /* ── Category accent mapping ── */
+    .cat-deutsch { --accent: var(--orange); }
+    .cat-zahlen  { --accent: var(--blue); }
+    .cat-spotit  { --accent: var(--green); }
+    .cat-others  { --accent: var(--gold); }
+
+    .cat-deutsch .tool-card { --card-glow: rgba(251,79,3,.14); }
+    .cat-zahlen  .tool-card { --card-glow: rgba(59,130,246,.14); }
+    .cat-spotit  .tool-card { --card-glow: rgba(34,197,94,.14); }
+    .cat-others  .tool-card { --card-glow: rgba(215,169,75,.14); }
+
+    /* ── Divider ── */
+    .divider {
+      width: min(1100px, calc(100% - 40px));
+      margin: 0 auto; border: none;
+      border-top: 1px solid var(--line);
+    }
+
+    /* ── Footer ── */
+    footer {
+      padding: 36px 24px 40px;
+      text-align: center;
+      font-size: 13px; color: var(--muted);
+      border-top: 1px solid var(--line);
+      margin-top: 48px;
+    }
+    footer a {
+      color: var(--muted); text-decoration: none;
+      transition: color .18s;
+    }
+    footer a:hover { color: var(--ink); }
+    footer a:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; border-radius: 3px; }
+    .footer-sep { margin: 0 .6em; opacity: .4; }
+
+    /* ── Scroll-reveal ── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(26px);
+      transition: opacity .65s ease, transform .65s ease;
+    }
+    .reveal.visible { opacity: 1; transform: none; }
+    .reveal-d1 { transition-delay: .08s; }
+    .reveal-d2 { transition-delay: .18s; }
+    .reveal-d3 { transition-delay: .28s; }
+
+    /* ── Responsive ── */
+    @media (max-width: 660px) {
+      .nav-links { display: none; }
+      .nav { padding: 10px 14px; }
+    }
+    @media (max-width: 480px) {
+      .hero { padding: 100px 16px 56px; }
+      .section { padding: 60px 0; }
+      .cards-grid { grid-template-columns: 1fr; }
+      .hero-stats { gap: 24px; }
+    }
+  </style>
+</head>
+<body>
+
+  <a href="#main" class="skip-link">Zum Inhalt springen</a>
+  <div class="progress-bar" id="progressBar" aria-hidden="true" role="presentation"></div>
+
+  <nav class="nav" aria-label="Hauptnavigation">
+    <a href="#" class="nav-brand" aria-label="Tools – Startseite">
+      <span aria-hidden="true">🛠</span>
+      <span><span class="nav-brand-accent">Tools</span> Übersicht</span>
+    </a>
+    <div class="nav-links" role="list">
+      <a href="#deutsch-spiele" role="listitem">Deutsch-Spiele</a>
+      <a href="#dreiZahlen" role="listitem">DreiZahlen</a>
+      <a href="#spotit" role="listitem">SpotIt</a>
+      <a href="#others" role="listitem">Others</a>
+    </div>
+  </nav>
+
+  <main id="main">
+
+    <!-- ══ HERO ══ -->
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-bg" aria-hidden="true"></div>
+      <div class="hero-orb hero-orb-1" aria-hidden="true"></div>
+      <div class="hero-orb hero-orb-2" aria-hidden="true"></div>
+      <div>
+        <p class="eyebrow">Interaktive Tools &amp; Spiele</p>
+        <h1 id="hero-title">
+          Alle <span class="grad">Tools</span><br>auf einen Blick
+        </h1>
+        <p class="hero-lead">
+          Bildungstools, Lernspiele und interaktive Anwendungen –
+          sorgfältig entwickelt für Schule, Freizeit und Neugier.
+        </p>
+        <div class="hero-actions">
+          <a href="#deutsch-spiele" class="btn btn-primary">
+            Tools erkunden <span aria-hidden="true">↓</span>
+          </a>
+          <a href="https://github.com/hogiSp/Tools" class="btn btn-secondary"
+             target="_blank" rel="noopener noreferrer">
+            GitHub <span aria-hidden="true">↗</span>
+          </a>
+        </div>
+        <dl class="hero-stats" aria-label="Kennzahlen">
+          <div class="stat">
+            <dt class="stat-label">Tools &amp; Spiele</dt>
+            <dd class="stat-num">7</dd>
+          </div>
+          <div class="stat">
+            <dt class="stat-label">Kategorien</dt>
+            <dd class="stat-num">4</dd>
+          </div>
+          <div class="stat">
+            <dt class="stat-label">PWA</dt>
+            <dd class="stat-num">1</dd>
+          </div>
+        </dl>
+      </div>
+    </section>
+
+    <!-- ══ DEUTSCH-SPIELE ══ -->
+    <section class="section cat-deutsch" id="deutsch-spiele"
+             aria-labelledby="title-deutsch">
+      <header class="section-header reveal">
+        <p class="section-eyebrow">Deutsch · Lernen</p>
+        <h2 class="section-title" id="title-deutsch">Deutsch-Spiele</h2>
+        <p class="section-desc">
+          Interaktive Lernspiele für Deutschkenntnisse –
+          von Satzgliedern bis zu neun abwechslungsreichen Minititel.
+        </p>
+      </header>
+      <div class="cards-grid">
+
+        <a href="Deutsch-Spiele/BonusGames_Arcade.html" class="tool-card reveal reveal-d1"
+           aria-label="BonusGames Arcade öffnen">
+          <div class="card-icon" aria-hidden="true">🎮</div>
+          <p class="card-title">BonusGames Arcade</p>
+          <p class="card-desc">
+            9 abwechslungsreiche Deutsch-Spiele in einer kompakten
+            Arcade-Oberfläche. Vokabeln, Grammatik und Schreiben spielerisch üben.
+          </p>
+          <div class="card-tags">
+            <span class="card-tag">9 Spiele</span>
+            <span class="card-tag">Self-contained</span>
+          </div>
+          <span class="card-arrow" aria-hidden="true">Jetzt spielen →</span>
+        </a>
+
+        <a href="Deutsch-Spiele/Satzglieder_Lerntrainer.html" class="tool-card reveal reveal-d2"
+           aria-label="Satzglieder Lerntrainer öffnen">
+          <div class="card-icon" aria-hidden="true">📝</div>
+          <p class="card-title">Satzglieder Lerntrainer</p>
+          <p class="card-desc">
+            Interaktiver Trainer für deutsche Satzglieder mit KI-Modus
+            (Spracherkennung), Analyse-Subnav, Quiz, Nomen-Kategorien
+            und Genitiv-Pokalen. v&nbsp;3.13
+          </p>
+          <div class="card-tags">
+            <span class="card-tag">KI-Modus</span>
+            <span class="card-tag">v 3.13</span>
+          </div>
+          <span class="card-arrow" aria-hidden="true">Zum Trainer →</span>
+        </a>
+
+      </div>
+    </section>
+
+    <hr class="divider" aria-hidden="true">
+
+    <!-- ══ DREIZHALEN ══ -->
+    <section class="section cat-zahlen" id="dreiZahlen"
+             aria-labelledby="title-zahlen">
+      <header class="section-header reveal">
+        <p class="section-eyebrow">Mathematik · Rätsel</p>
+        <h2 class="section-title" id="title-zahlen">DreiZahlen</h2>
+        <p class="section-desc">
+          Knobel-Spiele mit Zahlen und Rechenoperationen –
+          in der klassischen Fassung und als KI-optimierte Edition.
+        </p>
+      </header>
+      <div class="cards-grid">
+
+        <a href="DreiZahlen/3Zahlen.html" class="tool-card reveal reveal-d1"
+           aria-label="Zahlenjäger spielen">
+          <div class="card-icon" aria-hidden="true">🔢</div>
+          <p class="card-title">Zahlenjäger – A×B±C</p>
+          <p class="card-desc">
+            Das klassische Zahlen-Rätsel: Drei Zahlen, vier Grundrechenarten –
+            setze Klammern und Operationen gezielt ein, um das Ziel zu erreichen.
+          </p>
+          <div class="card-tags">
+            <span class="card-tag">Klassisch</span>
+          </div>
+          <span class="card-arrow" aria-hidden="true">Spielen →</span>
+        </a>
+
+        <a href="DreiZahlen/3Zahlen_GPT5.5.html" class="tool-card reveal reveal-d2"
+           aria-label="Zahlenkarten-Jagd spielen">
+          <div class="card-icon" aria-hidden="true">🤖</div>
+          <p class="card-title">Zahlenkarten-Jagd</p>
+          <p class="card-desc">
+            KI-gestützte Variante des Zahlen-Rätsels mit erweiterter
+            Hinting-Logik, optimierter Spielmechanik und frischem Interface.
+          </p>
+          <div class="card-tags">
+            <span class="card-tag">KI-Edition</span>
+            <span class="card-tag">GPT 5.5</span>
+          </div>
+          <span class="card-arrow" aria-hidden="true">Spielen →</span>
+        </a>
+
+      </div>
+    </section>
+
+    <hr class="divider" aria-hidden="true">
+
+    <!-- ══ SPOTIT GENERATOR ══ -->
+    <section class="section cat-spotit" id="spotit"
+             aria-labelledby="title-spotit">
+      <header class="section-header reveal">
+        <p class="section-eyebrow">Kartenspiel · Generator</p>
+        <h2 class="section-title" id="title-spotit">SpotIt Generator</h2>
+        <p class="section-desc">
+          Erstelle eigene Spot-It / Dobble-Karten mit beliebigen Symbolen –
+          als Progressive Web App auch offline nutzbar.
+        </p>
+      </header>
+      <div class="cards-grid">
+
+        <a href="SpotIt_Generator/spotit_generator.html" class="tool-card reveal reveal-d1"
+           aria-label="Spot-It Card Generator öffnen">
+          <div class="card-icon" aria-hidden="true">🎴</div>
+          <p class="card-title">Spot-It Card Generator</p>
+          <p class="card-desc">
+            Generiere mathematisch korrekte Spot-It-Karten mit eigenen Symbolen
+            und Skalierungsoptionen. Druckfertige Ausgabe, vollständig
+            im Browser – auch offline als PWA installierbar.
+          </p>
+          <div class="card-tags">
+            <span class="card-tag">PWA</span>
+            <span class="card-tag">Offline</span>
+            <span class="card-tag">Druckfertig</span>
+          </div>
+          <span class="card-arrow" aria-hidden="true">Generator öffnen →</span>
+        </a>
+
+      </div>
+    </section>
+
+    <hr class="divider" aria-hidden="true">
+
+    <!-- ══ OTHERS ══ -->
+    <section class="section cat-others" id="others"
+             aria-labelledby="title-others">
+      <header class="section-header reveal">
+        <p class="section-eyebrow">Sonstiges · Interaktiv</p>
+        <h2 class="section-title" id="title-others">Others</h2>
+        <p class="section-desc">
+          Weitere interaktive Anwendungen – von einer spielbaren digitalen
+          Pedalharfe bis zum Stabheuschrecken-Pflegecockpit.
+        </p>
+      </header>
+      <div class="cards-grid">
+
+        <a href="others/harfe.html" class="tool-card reveal reveal-d1"
+           aria-label="Harfe-App öffnen">
+          <div class="card-icon" aria-hidden="true">🎼</div>
+          <p class="card-title">Harfe</p>
+          <p class="card-desc">
+            Eine vollständig spielbare digitale Pedalharfe mit realistischer
+            Klangsimulation, Doppelpedalmechanik, Glissando, harmonischer
+            S-Kurven-Herleitung und Acoustic-Lab-Sektion. v&nbsp;1.2
+          </p>
+          <div class="card-tags">
+            <span class="card-tag">Touch</span>
+            <span class="card-tag">Audio</span>
+            <span class="card-tag">Physik</span>
+          </div>
+          <span class="card-arrow" aria-hidden="true">Harfe spielen →</span>
+        </a>
+
+        <a href="others/stabheuschrecken_interaktiv_compact.html" class="tool-card reveal reveal-d2"
+           aria-label="Stabheuschrecken Cockpit öffnen">
+          <div class="card-icon" aria-hidden="true">🦗</div>
+          <p class="card-title">Stabheuschrecken Cockpit</p>
+          <p class="card-desc">
+            Interaktives Informations- und Pflegecockpit für Stabheuschrecken –
+            mit animierten Grafiken, detaillierten Pflegehinweisen
+            und Hell-/Dunkel-Modus.
+          </p>
+          <div class="card-tags">
+            <span class="card-tag">Interaktiv</span>
+            <span class="card-tag">Dark / Light</span>
+          </div>
+          <span class="card-arrow" aria-hidden="true">Cockpit öffnen →</span>
+        </a>
+
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <p>
+      <a href="https://github.com/hogiSp/Tools" target="_blank" rel="noopener noreferrer">
+        hogiSp/Tools auf GitHub
+      </a>
+      <span class="footer-sep">·</span>
+      <a href="SpotIt_Generator/privacy.html">Datenschutz</a>
+    </p>
+  </footer>
+
+  <script>
+    /* ── Scroll-progress bar ── */
+    const bar = document.getElementById('progressBar');
+    window.addEventListener('scroll', () => {
+      const total = document.documentElement.scrollHeight - window.innerHeight;
+      bar.style.transform = 'scaleX(' + (total > 0 ? window.scrollY / total : 0) + ')';
+    }, { passive: true });
+
+    /* ── Scroll-reveal via IntersectionObserver ── */
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      const io = new IntersectionObserver(
+        entries => entries.forEach(e => {
+          if (e.isIntersecting) {
+            e.target.classList.add('visible');
+            io.unobserve(e.target);
+          }
+        }),
+        { threshold: 0.1, rootMargin: '0px 0px -36px 0px' }
+      );
+      document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+    } else {
+      document.querySelectorAll('.reveal').forEach(el => el.classList.add('visible'));
+    }
+  </script>
+
+</body>
+</html>
