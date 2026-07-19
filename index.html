@@ -293,11 +293,54 @@
     .cat-zahlen  { --accent: var(--blue); }
     .cat-spotit  { --accent: var(--green); }
     .cat-others  { --accent: var(--gold); }
+    .cat-auto    { --accent: var(--purple); }
 
     .cat-deutsch .tool-card { --card-glow: rgba(251,79,3,.14); }
     .cat-zahlen  .tool-card { --card-glow: rgba(59,130,246,.14); }
     .cat-spotit  .tool-card { --card-glow: rgba(34,197,94,.14); }
     .cat-others  .tool-card { --card-glow: rgba(215,169,75,.14); }
+
+    /* ── Auto-discovered files ── */
+    .auto-discovered-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 12px;
+    }
+    .auto-file-link {
+      display: flex; flex-direction: column; gap: 6px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      background: var(--glass);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      text-decoration: none; color: inherit;
+      transition: transform .3s, box-shadow .3s, border-color .3s;
+    }
+    .auto-file-link:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 16px 40px rgba(0,0,0,.38);
+      border-color: rgba(139,92,246,.35);
+    }
+    .auto-file-link:focus-visible {
+      outline: 2px solid var(--purple); outline-offset: 2px;
+      border-radius: var(--radius);
+    }
+    .auto-file-name {
+      font-size: 15px; font-weight: 700; letter-spacing: -.018em;
+      color: var(--ink);
+    }
+    .auto-file-path {
+      font-size: 11px; color: var(--muted);
+      font-family: ui-monospace, SFMono-Regular, monospace;
+    }
+    .auto-file-arrow {
+      margin-top: 4px; font-size: 12px; font-weight: 700;
+      color: var(--purple);
+    }
+    .auto-status-msg {
+      color: var(--muted); font-size: 14px; padding: 8px 0;
+    }
 
     /* ── Divider ── */
     .divider {
@@ -361,6 +404,7 @@
       <a href="#dreiZahlen" role="listitem">DreiZahlen</a>
       <a href="#spotit" role="listitem">SpotIt</a>
       <a href="#others" role="listitem">Others</a>
+      <a href="#weitere-dateien" role="listitem">Weitere</a>
     </div>
   </nav>
 
@@ -586,6 +630,26 @@
       </div>
     </section>
 
+    <hr class="divider" aria-hidden="true">
+
+    <!-- ══ WEITERE HTML-DATEIEN (automatisch erkannt) ══ -->
+    <section class="section cat-auto" id="weitere-dateien"
+             aria-labelledby="title-auto">
+      <header class="section-header reveal">
+        <p class="section-eyebrow">Automatisch erkannt · Optional</p>
+        <h2 class="section-title" id="title-auto">Weitere HTML-Dateien</h2>
+        <p class="section-desc">
+          HTML-Dateien aus dem Repository, die noch nicht oben als Karte beschrieben sind –
+          automatisch per GitHub API gefunden. Neue Dateien erscheinen hier, ohne dass
+          <code style="font-family:inherit;opacity:.7">index.html</code> manuell angepasst werden muss.
+          Bei API- oder Netzwerkfehlern bleibt die Seite voll funktionsfähig.
+        </p>
+      </header>
+      <div id="auto-discovered-grid" class="auto-discovered-grid" aria-live="polite">
+        <p class="auto-status-msg" id="auto-status">Wird geladen …</p>
+      </div>
+    </section>
+
   </main>
 
   <footer>
@@ -620,6 +684,91 @@
       document.querySelectorAll('.reveal').forEach(el => io.observe(el));
     } else {
       document.querySelectorAll('.reveal').forEach(el => el.classList.add('visible'));
+    }
+
+    /* ── Auto-discovered HTML files ── */
+    {
+      const REPO   = 'hogiSp/Tools';
+      const BRANCH = 'main';
+
+      // Collect relative paths already shown as tool cards – derived live from the DOM
+      // so newly added cards are automatically excluded without touching this script.
+      const knownPaths = new Set(
+        [...document.querySelectorAll('a.tool-card[href]')]
+          .map(a => a.getAttribute('href'))
+      );
+
+      // Permanent exclusions (beyond the tool cards collected above)
+      const EXCLUDE = [
+        /^index\.html$/i,   // this page itself
+        /privacy/i,          // privacy / Datenschutz pages
+        /datenschutz/i,
+        /\/attic\//i,        // archived/technical folders
+        /^\.well-known\//    // ACME / GitHub ownership files
+      ];
+
+      const toTitle = path =>
+        path.split('/').pop()
+            .replace(/\.html?$/i, '')
+            .replace(/[-_]+/g, ' ')
+            .replace(/\b\w/g, c => c.toUpperCase());
+
+      const grid   = document.getElementById('auto-discovered-grid');
+      const status = document.getElementById('auto-status');
+
+      fetch(`https://api.github.com/repos/${REPO}/git/trees/${BRANCH}?recursive=1`)
+        .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+        .then(data => {
+          const files = (data.tree || [])
+            .filter(n => n.type === 'blob' && /\.html?$/i.test(n.path))
+            .map(n => n.path)
+            .filter(p => !knownPaths.has(p) && !EXCLUDE.some(rx => rx.test(p)));
+
+          if (files.length === 0) {
+            status.textContent = 'Keine weiteren HTML-Dateien gefunden.';
+            return;
+          }
+
+          status.hidden = true;
+
+          const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+          const autoObs = reduced ? null : new IntersectionObserver(
+            entries => entries.forEach(e => {
+              if (e.isIntersecting) { e.target.classList.add('visible'); autoObs.unobserve(e.target); }
+            }),
+            { threshold: 0.1, rootMargin: '0px 0px -36px 0px' }
+          );
+
+          files.forEach((path, i) => {
+            const a = document.createElement('a');
+            a.href = path;
+            // Build class list – reveal animation unless reduced-motion is active
+            a.className = 'auto-file-link' +
+              (reduced ? '' : ' reveal reveal-d' + (Math.min(i, 2) + 1));
+            if (reduced) a.classList.add('visible');
+
+            // All text set via textContent – no innerHTML interpolation (XSS-safe)
+            const nameEl = document.createElement('span');
+            nameEl.className = 'auto-file-name';
+            nameEl.textContent = toTitle(path);
+
+            const pathEl = document.createElement('span');
+            pathEl.className = 'auto-file-path';
+            pathEl.textContent = path;
+
+            const arrowEl = document.createElement('span');
+            arrowEl.className = 'auto-file-arrow';
+            arrowEl.setAttribute('aria-hidden', 'true');
+            arrowEl.textContent = 'Öffnen →';
+
+            a.append(nameEl, pathEl, arrowEl);
+            grid.appendChild(a);
+            if (autoObs) autoObs.observe(a);
+          });
+        })
+        .catch(() => {
+          status.textContent = 'Automatische Erkennung nicht verfügbar (API nicht erreichbar).';
+        });
     }
   </script>
 
